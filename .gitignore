@@ -131,3 +131,6 @@ dmypy.json
 # project specific ignores
 .ghidra_projects*/
 .ghidra_bridge*/
+.decompilations*/
+.symbols*/
+bins*/
