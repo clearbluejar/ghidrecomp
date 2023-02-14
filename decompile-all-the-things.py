@@ -60,6 +60,18 @@ def get_pdb(prog: "ghidra.program.model.listing.Program") -> "java.io.File":
     return pdb
 
 
+def set_pdb(program: "ghidra.program.model.listing.Program", path: Union[str, Path]):
+
+    from ghidra.app.plugin.core.analysis import PdbUniversalAnalyzer
+    from java.io import File
+
+    symbol_path = Path(symbol_path)
+    print(f'Setting pdb to {symbol_path}')
+
+    pdbFile = File(symbol_path)
+    PdbUniversalAnalyzer.setPdbFileOption(program, pdbFile)
+
+
 def setup_decompliers(p1: "ghidra.program.model.listing.Program") -> dict:
     """
     Setup decompliers to use during diff bins. Each one must be initialized with a program.
@@ -82,10 +94,11 @@ def decompile_func(func: 'ghidra.program.model.listing.Function', monitor, decom
     """
     Decompile function and return [funcname, decompilation]
     """
+    MAX_PATH_LEN = 50
     decomp = decompilers[thread_id].decompileFunction(func, TIMEOUT, monitor).getDecompiledFunction()
     code = decomp.getC() if decomp else ""
 
-    return [f'{func.getName()}-{func.iD}', code]
+    return [f'{func.getName()[:MAX_PATH_LEN]}-{func.iD}', code]
 
 
 if __name__ == "__main__":
@@ -94,14 +107,16 @@ if __name__ == "__main__":
 
     parser.add_argument('bin', help='Path to binary used for analysis')
     parser.add_argument('-s', '--symbol-path', help='Path to symbol path for bin', default='.symbols')
+    parser.add_argument('--sym-file-path', help='Specify pdb symbol file for bin')
     parser.add_argument('-o', '--output-path', help='Location for all decompilations', default='.decompilations')
+    parser.add_argument('--project-path', help='Path to base ghidra projects ', default='.ghidra_projects')
 
     args = parser.parse_args()
 
     print(args)
 
     bin_path = Path(args.bin)
-    project_location = Path('.ghidra_projects')
+    project_location = Path(args.project_path)
 
     output_path = Path(args.output_path) / bin_path.name
     output_path.mkdir(exist_ok=True, parents=True)
@@ -120,11 +135,16 @@ if __name__ == "__main__":
 
         program: "ghidra.program.model.listing.Program" = flat_api.getCurrentProgram()
 
-        # configure symbol path for bin
-        setup_symbols(args.symbol_path)
+        if args.sym_file_path:
+            set_pdb(program, args.sym_file_path)
 
-        pdb = get_pdb(program)
-#        assert pdb is not None
+        elif 'visualstudio' in program.compiler:
+
+            # configure windows symbol path for bin
+            setup_symbols(args.symbol_path)
+
+            pdb = get_pdb(program)
+            # assert pdb is not None
 
         decompilers = setup_decompliers(program)
 
@@ -136,15 +156,17 @@ if __name__ == "__main__":
             GhidraScriptUtil.releaseBundleHostReference()
 
         all_funcs = []
+        skip_count = 0
 
         for f in program.functionManager.getFunctions(True):
 
-            if f.getName().startswith('FUN_'):
-                # skip FUN for demo
-                continue
+            # if f.getName().startswith('FUN_'):
+            #     # skip FUN for demo
+            #     skip_count += 1
+            #     continue
 
             all_funcs.append(f)
-
+        print(f'Skipped {skip_count} FUN_ functions')
         print(f'Decompiling {len(all_funcs)} functions using {THREAD_COUNT} threads')
 
         completed = 0
@@ -163,7 +185,7 @@ if __name__ == "__main__":
 
         start = time()
         with concurrent.futures.ThreadPoolExecutor(max_workers=THREAD_COUNT) as executor:
-            futures = (executor.submit((output_path / name).write_text, decomp)
+            futures = (executor.submit((output_path / (name + '.c')).write_text, decomp)
                        for name, decomp in decompilations)
             for future in concurrent.futures.as_completed(futures):
                 decompilations.append(future.result())
