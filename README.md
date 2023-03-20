@@ -1,21 +1,24 @@
-# ghidra-decompile-all-the-things
+# Ghidrecomp - Command Line Ghidra Decompiler 
 
 <p align="center">
 <img align="center" src="">
 </p>
 
 <p align="center">
+<img align="center" src="https://img.shields.io/github/stars/clearbluejar/ghidrecomp?style=for-the-badge">
 <a href="https://twitter.com/clearbluejar"><img align="center" src="https://img.shields.io/twitter/follow/clearbluejar?color=blue&style=for-the-badge"></a> 
-  <img align="center" src="https://img.shields.io/github/stars/clearbluejar/ghidra-decompile-all-the-things?style=for-the-badge">
- <img align="center" alt="Mastodon Follow" src="https://img.shields.io/mastodon/follow/109396299069714193?color=purple&domain=https%3A%2F%2Finfosec.exchange&label=%40clearbluejar%40infosec.exchange&style=for-the-badge">
+<img align="center" alt="Mastodon Follow" src="https://img.shields.io/mastodon/follow/109396299069714193?color=purple&domain=https%3A%2F%2Finfosec.exchange&label=%40clearbluejar%40infosec.exchange&style=for-the-badge">
 </p>
 
+## About
 
+This tool decompiles all the functions of a binary and writes them to a directory. The main purpose for this is to use the decomplilations for research and analysis.
 
 ## Features
 
-- Decompile all the functions within a binary
-- Output to directory for later analysis
+- Decompile all the functions within a binary (threaded)
+- Hook for extra_processing
+- Dump
 
 ## Usage
 

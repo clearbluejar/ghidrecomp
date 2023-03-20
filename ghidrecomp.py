@@ -48,14 +48,14 @@ def get_pdb(prog: "ghidra.program.model.listing.Program") -> "java.io.File":
     """
 
     from pdb_.symbolserver import FindOption
-    from ghidra.util.task import TaskMonitor
+    from ghidra.util.task import ConsoleTaskMonitor
     from pdb_ import PdbPlugin
 
     find_opts = FindOption.of(FindOption.ALLOW_REMOTE)
     # find_opts = FindOption.NO_OPTIONS
 
     # Ghidra/Features/PDB/src/main/java/pdb/PdbPlugin.java#L191
-    pdb = PdbPlugin.findPdb(prog, find_opts, TaskMonitor.DUMMY)
+    pdb = PdbPlugin.findPdb(prog, find_opts, ConsoleTaskMonitor())
 
     return pdb
 
@@ -93,6 +93,7 @@ def setup_decompliers(p1: "ghidra.program.model.listing.Program") -> dict:
 def decompile_func(func: 'ghidra.program.model.listing.Function', monitor, decompilers: dict, thread_id: int = 0, TIMEOUT: int = 1) -> list:
     """
     Decompile function and return [funcname, decompilation]
+    Ghidra/Features/Decompiler/src/main/java/ghidra/app/util/exporter/CppExporter.java#L514
     """
     MAX_PATH_LEN = 50
     decomp = decompilers[thread_id].decompileFunction(func, TIMEOUT, monitor).getDecompiledFunction()
@@ -103,12 +104,13 @@ def decompile_func(func: 'ghidra.program.model.listing.Function', monitor, decom
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description='A demo Ghidra callgraph generation script')
+    parser = argparse.ArgumentParser(description='ghidrecomp - A Command Line Ghidra Decompiler',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('bin', help='Path to binary used for analysis')
     parser.add_argument('-s', '--symbol-path', help='Path to symbol path for bin', default='.symbols')
     parser.add_argument('--sym-file-path', help='Specify pdb symbol file for bin')
-    parser.add_argument('-o', '--output-path', help='Location for all decompilations', default='.decompilations')
+    parser.add_argument('-o', '--output-path', help='Location for all decompilations', default='decompilations')
     parser.add_argument('--project-path', help='Path to base ghidra projects ', default='.ghidra_projects')
 
     args = parser.parse_args()
@@ -143,17 +145,23 @@ if __name__ == "__main__":
             # configure windows symbol path for bin
             setup_symbols(args.symbol_path)
 
+            from ghidra.app.plugin.core.analysis import PdbAnalyzer
+            from ghidra.app.plugin.core.analysis import PdbUniversalAnalyzer
+            # Enable Remote Symbol Servers
+            PdbUniversalAnalyzer.setAllowRemoteOption(program, True)
+            PdbAnalyzer.setAllowRemoteOption(program, True)
+
             pdb = get_pdb(program)
             # assert pdb is not None
 
         decompilers = setup_decompliers(program)
 
         # analyze program if we haven't yet
-        if GhidraProgramUtilities.shouldAskToAnalyze(program):
-            GhidraScriptUtil.acquireBundleHostReference()
-            flat_api.analyzeAll(program)
-            GhidraProgramUtilities.setAnalyzedFlag(program, True)
-            GhidraScriptUtil.releaseBundleHostReference()
+        # if GhidraProgramUtilities.shouldAskToAnalyze(program):
+        # GhidraScriptUtil.acquireBundleHostReference()
+        # #flat_api.analyzeAll(program)
+        # GhidraProgramUtilities.setAnalyzedFlag(program, True)
+        # GhidraScriptUtil.releaseBundleHostReference()
 
         all_funcs = []
         skip_count = 0
@@ -168,6 +176,35 @@ if __name__ == "__main__":
             all_funcs.append(f)
         print(f'Skipped {skip_count} FUN_ functions')
         print(f'Decompiling {len(all_funcs)} functions using {THREAD_COUNT} threads')
+
+        from decompiler import MyDecompileConfigurer
+        from ghidra.app.decompiler.parallel import ParallelDecompiler
+        from ghidra.app.decompiler.parallel import DecompilerCallback
+        from ghidra.app.decompiler.parallel import DecompileConfigurer
+        from decompiler import CallBack
+        from ghidra.app.plugin.core.decompile import DecompilePlugin, DecompilerProvider
+
+        plugin =
+        DecompilerProvider()
+
+        # import ghidra.app.util
+        from ghidra.app.util.exporter import CppExporter
+
+        # configurer = MyDecompileConfigurer()
+        # callback = DecompilerCallback(program, configurer)
+
+        # callback = CallBack()
+
+        # ParallelDecompiler.decompileFunctions(callback, program, all_funcs, None, monitor)
+
+        from java.io import File
+
+        test = File('test')
+
+        start = time()
+        decompiler = CppExporter(True, True, True, False, None)
+        decompiler.export(test, program, program.getMemory(), ConsoleTaskMonitor.DUMMY)
+        print(f'Wrote for {program.name} to {output_path} in {time() - start}')
 
         completed = 0
         decompilations = []
