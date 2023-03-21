@@ -5,21 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Python: Module",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
+            "module": "ghidrecomp",
             "justMyCode": true,
-            // Don't edit env directly, they read from settings.json
-            // Add/delete new vars as needed
-            "env": {
-                "GHIDRA_INSTALL_DIR": "${config:GHIDRA_INSTALL_DIR}",
-                "GHIDRA_PROJECTS_PATH": "${config:GHIDRA_PROJECTS_PATH}",
-            },
             "args": [
-                "bins/rpcrt4.dll.x64.10.0.22000.613"
+                "test.dll"
             ]
-        }
+        },
     ]
 }
