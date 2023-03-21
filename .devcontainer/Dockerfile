@@ -19,12 +19,3 @@ RUN if [ "${NODE_VERSION}" != "none" ]; then su vscode -c "umask 0002 && . /usr/
 
 # [Optional] Uncomment this line to install global node packages.
 # RUN su vscode -c "source /usr/local/share/nvm/nvm.sh && npm install -g <your-package-here>" 2>&1
-
-# Copy library scripts to execute
-COPY .devcontainer/library-scripts/*.sh .devcontainer/library-scripts/*.env /tmp/library-scripts/
-
-# [Choice] Ghidra version: none, latest, 10.1.4, 10.1.3, 9.0.1
-ARG GHIDRA_VERSION=latest
-ARG USERNAME=vscode
-RUN bash /tmp/library-scripts/ghidra-install.sh "${GHIDRA_VERSION}" "/ghidra" "${USERNAME}" "true" \ 
-    && rm -rf /tmp/library-scripts/
