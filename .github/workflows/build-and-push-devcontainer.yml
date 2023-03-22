@@ -26,5 +26,5 @@ jobs:
           imageName: ghcr.io/clearbluejar/ghidrecomp
           cacheFrom: ghcr.io/clearbluejar/ghidrecomp
           push: always
-        runCmd: |
-          find .
+          runCmd: |
+            find .
