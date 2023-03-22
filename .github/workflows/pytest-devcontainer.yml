@@ -1,0 +1,38 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Pytest Python Package In Devcontainer
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8"]
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Test with pytest on devcontainer    
+      uses: devcontainers/ci@v0.3
+      with:
+        imageName: ghcr.io/clearbluejar/ghidrecomp
+        cacheFrom: ghcr.io/clearbluejar/ghidrecomp
+        push: never
+        runCmd: |
+          pip install --upgrade pip          
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -e .
+          pytest -rA
