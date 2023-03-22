@@ -8,7 +8,7 @@ on: # rebuild any PRs and main branch changes
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
 
       - name: Checkout (GitHub)
@@ -29,3 +29,4 @@ jobs:
           push: always
           runCmd: |
             find .
+            find /ghidra
