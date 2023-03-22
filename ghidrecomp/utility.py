@@ -1,10 +1,36 @@
+import argparse
+import multiprocessing
 from pathlib import Path
 from typing import Union, TYPE_CHECKING
+
+THREAD_COUNT = multiprocessing.cpu_count()
 
 # needed for ghidra python vscode autocomplete
 if TYPE_CHECKING:
     import ghidra
-    from ghidra_builtins import *
+    from ghidra_builtins import *  # noqa: F403
+
+
+def get_parser() -> argparse.ArgumentParser:
+
+    parser = argparse.ArgumentParser(description='ghidrecomp - A Command Line Ghidra Decompiler',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument('bin', help='Path to binary used for analysis')
+    parser.add_argument('--cppexport', action='store_true', help='Use Ghidras CppExporter to decompile to single file')
+    parser.add_argument('--filter', help='Regex filter for function name')
+    parser.add_argument('--project-path', help='Path to base ghidra projects ', default='.ghidra_projects')
+    parser.add_argument('-o', '--output-path', help='Location for all decompilations', default='decompilations')
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--sym-file-path', help='Specify single pdb symbol file for bin')
+    group.add_argument('-s', '--symbols-path', help='Path for local symbols directory', default='.symbols')
+    group.add_argument('--skip-symbols', help='Do not apply symbols', action='store_true')
+
+    parser.add_argument('-t', '--thread-count', type=int,
+                        help='Threads to use for processing. Defaults to cpu count', default=THREAD_COUNT)
+
+    return parser
 
 
 def analyze_program(program, verbose: bool = False):
@@ -30,22 +56,20 @@ def analyze_program(program, verbose: bool = False):
             GhidraProgramUtilities.setAnalyzedFlag(program, True)
         finally:
             GhidraScriptUtil.releaseBundleHostReference()
+    else:
+        print(f'{program} already analyzed... skipping')
 
 
 def setup_symbol_server(symbols_path: Union[str, Path], level=1, server_urls=None) -> None:
-    """setup symbols to allow Ghidra to download as needed
-    1. Configures symbol_path as local symbol store path
-    2. Sets Index level for local symbol path                 
-    - Level 0 indexLevel is a special Ghidra construct that is just a user-friendlier plain directory with a collection of Pdb files
-    [symbol-store-folder-tree](https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/symbol-store-folder-tree) (applies to 1 and 2)
-    - Level 1, with pdb files stored directly underthe root directory
-    - Level 2, using the first 2 characters of the pdb filename as a bucket to place each pdb file-directory in        
     """
-
-    print("Setting up Symbol Server for symbols...")
-    print(f"path: {symbols_path} level: {level}")
-
-    symbols_path = Path(symbols_path).absolute()
+    setup symbols to allow Ghidra to download as needed
+    1. Configures symbol_path as local symbol store path
+    2. Sets Index level for local symbol path
+    - Level 0 indexLevel is a special Ghidra construct - plain directory with a collection of Pdb files
+    - Level 1, with pdb files stored directly underthe root directory
+    - Level 2, using the first 2 characters of the pdb filename as a bucket to place each pdb file-directory in
+    [symbol-store-folder-tree](https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/symbol-store-folder-tree)
+    """
 
     from pdb_ import PdbPlugin
     from pdb_.symbolserver import LocalSymbolStore
@@ -56,6 +80,11 @@ def setup_symbol_server(symbols_path: Union[str, Path], level=1, server_urls=Non
     from java.io import File
     from java.net import URI
     from java.util import ArrayList
+
+    print("Setting up Symbol Server for symbols...")
+    print(f"path: {symbols_path} level: {level}")
+
+    symbols_path = Path(symbols_path).absolute()
 
     # Configure local symbols directory
     symbolsDir = File(symbols_path)
