@@ -5,7 +5,7 @@ on: # rebuild when devcontainer is updated
       - '.devcontainer/**'
     branches:
       - main
-  workflow_dispatch:
+  workflow_dispatch:  
 
 jobs:
   build:
