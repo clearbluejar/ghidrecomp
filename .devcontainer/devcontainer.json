@@ -1,10 +1,23 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/python-3
 {
-	"name": "Python 3",
+	"name": "ghidrecomp",
 	// Append -bullseye or -buster to pin to an OS version.
 	// Use -bullseye variants on local on arm64/Apple Silicon.
-	"image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.10-bullseye",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"context": "..",
+		"args": {
+			// Update 'VARIANT' to pick a Python version: 3, 3.10, 3.9, 3.8, 3.7, 3.6
+			// Append -bullseye or -buster to pin to an OS version.
+			// Use -bullseye variants on local on arm64/Apple Silicon.
+			"VARIANT": "3.10-bullseye",
+			// Options
+			"NODE_VERSION": "none"
+		},
+		// build from cache when available
+		"cacheFrom": "ghcr.io/clearbluejar/ghidrecomp"
+	},
 	// Configure tool-specific properties. 
 	"customizations": {
 		// Configure properties specific to VS Code.

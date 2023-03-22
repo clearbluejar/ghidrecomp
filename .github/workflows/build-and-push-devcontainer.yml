@@ -1,7 +1,8 @@
 name: 'build-and-push-devcontainer' 
-on: # rebuild any PRs and main branch changes
-  pull_request:
+on: # rebuild when devcontainer is updated
   push:
+    paths:
+      - '.devcontainer/**'
     branches:
       - main
   workflow_dispatch:
