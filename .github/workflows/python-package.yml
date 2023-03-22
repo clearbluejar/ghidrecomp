@@ -8,6 +8,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -42,6 +43,14 @@ jobs:
       run: |
         # stop the build if there are Python syntax errors or undefined names
         autopep8 -r . -d
-    - name: Test with pytest
-      run: |
-        pytest -rA
+    - name: Test with pytest on devcontainer    
+      uses: devcontainers/ci@v0.3
+      with:
+        imageName: ghcr.io/clearbluejar/ghidrecomp
+        cacheFrom: ghcr.io/clearbluejar/ghidrecomp
+        push: never
+        runCmd: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pytest -rA
