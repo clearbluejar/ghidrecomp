@@ -11,7 +11,7 @@
             "module": "ghidrecomp",
             "justMyCode": true,
             "args": [
-                "test.dll"
+                "tests/data/ls_aarch64"
             ]
         },
     ]
