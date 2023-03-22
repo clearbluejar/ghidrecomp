@@ -1,2 +1,4 @@
 ghidra-stubs
 pyhidra
+pytest
+pytest-datadir
