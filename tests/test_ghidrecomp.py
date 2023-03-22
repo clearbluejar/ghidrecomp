@@ -23,6 +23,20 @@ def test_decomplie_ls(shared_datadir: Path):
     assert lang_id == 'AARCH64:LE:64:v8A'
 
 
+def test_ctype_filter_ls(shared_datadir: Path):
+
+    parser = get_parser()
+
+    bin_path = shared_datadir / 'ls_aarch64'
+
+    args = parser.parse_args([f"{bin_path.absolute()}", "--filter", "ctype"])
+
+    all_funcs, decompilations, output_path, compiler, lang_id = decompile(args)
+
+    assert len(all_funcs) == 8
+    assert len(decompilations) == 8
+
+
 def test_decomplie_afd(shared_datadir: Path):
 
     parser = get_parser()

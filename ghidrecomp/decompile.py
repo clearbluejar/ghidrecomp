@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 from argparse import Namespace
@@ -123,17 +124,17 @@ def decompile(args: Namespace):
         analyze_program(program, verbose=True)
 
         all_funcs = []
-        # skip_count = 0
+        skip_count = 0
 
         for f in program.functionManager.getFunctions(True):
 
-            # TODO implement filter
-            # if f.getName().startswith('FUN_'):
-            #     # skip FUN for demo
-            #     skip_count += 1
-            #     continue
-
-            all_funcs.append(f)
+            if args.filters:
+                if any([re.search(fil, f.name, re.IGNORECASE) for fil in args.filters]):
+                    all_funcs.append(f)
+                else:
+                    ski
+            else:
+                all_funcs.append(f)
 
         # print(f'Skipped {skip_count} FUN_ functions')
 

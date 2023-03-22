@@ -18,7 +18,7 @@ def get_parser() -> argparse.ArgumentParser:
 
     parser.add_argument('bin', help='Path to binary used for analysis')
     parser.add_argument('--cppexport', action='store_true', help='Use Ghidras CppExporter to decompile to single file')
-    parser.add_argument('--filter', help='Regex filter for function name')
+    parser.add_argument('--filters', nargs='*', help='Regex filter for function name')
     parser.add_argument('--project-path', help='Path to base ghidra projects ', default='.ghidra_projects')
     parser.add_argument('-o', '--output-path', help='Location for all decompilations', default='decompilations')
 
