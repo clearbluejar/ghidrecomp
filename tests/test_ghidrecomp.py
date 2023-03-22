@@ -41,7 +41,7 @@ def test_decomplie_afd(shared_datadir: Path):
 
     parser = get_parser()
 
-    bin_path = shared_datadir / 'afd.sys.10.0.22621.1344'
+    bin_path = shared_datadir / 'afd.sys.10.0.22621.1415'
 
     args = parser.parse_args([f"{bin_path.absolute()}"])
 
