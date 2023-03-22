@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from argparse import Namespace
 import concurrent.futures
-from pathlib import Path
 from time import time
 import pyhidra
 
