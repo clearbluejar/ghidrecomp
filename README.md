@@ -29,7 +29,7 @@ This tool decompiles all the functions of a binary and writes them to a director
 
 1. [Download](https://github.com/NationalSecurityAgency/ghidra/releases) and [install Ghidra](https://htmlpreview.github.io/?https://github.com/NationalSecurityAgency/ghidra/blob/stable/GhidraDocs/InstallationGuide.html#Install).
 2. Set Ghidra Environment Variable `GHIDRA_INSTALL_DIR` to Ghidra install location.
-3. Pip install `ghidriff`
+3. Pip install `ghidrecomp`
 
 ### Windows
 
@@ -41,7 +41,7 @@ PS C:\Users\user> pip install ghidrecomp
 
 ```bash
 export GHIDRA_INSTALL_DIR="/path/to/ghidra/"
-pip install ghidriff
+pip install ghidrecomp
 ```
 
 ### Devcontainer / Docker
