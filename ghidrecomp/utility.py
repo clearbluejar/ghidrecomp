@@ -18,7 +18,7 @@ def get_parser() -> argparse.ArgumentParser:
 
     parser.add_argument('bin', help='Path to binary used for analysis')
     parser.add_argument('--cppexport', action='store_true', help='Use Ghidras CppExporter to decompile to single file')
-    parser.add_argument('--filters', nargs='*', help='Regex filter for function name')
+    parser.add_argument('--filter', dest='filters', action='append', help='Regex match for function name')
     parser.add_argument('--project-path', help='Path to base ghidra projects ', default='.ghidra_projects')
     parser.add_argument('-o', '--output-path', help='Location for all decompilations', default='decompilations')
 
@@ -29,6 +29,7 @@ def get_parser() -> argparse.ArgumentParser:
 
     parser.add_argument('-t', '--thread-count', type=int,
                         help='Threads to use for processing. Defaults to cpu count', default=THREAD_COUNT)
+    parser.add_argument('--va', help='Enable verbose analysis', action='store_true')
 
     return parser
 
@@ -44,6 +45,7 @@ def analyze_program(program, verbose: bool = False):
     from ghidra.app.script import GhidraScriptUtil
 
     if verbose:
+        print('Enabling verbose analysis..')
         monitor = ConsoleTaskMonitor()
         flat_api = FlatProgramAPI(program, monitor)
     else:

@@ -121,7 +121,7 @@ def decompile(args: Namespace):
                 # assert pdb is not None
 
         # analyze program if we haven't yet
-        analyze_program(program, verbose=True)
+        analyze_program(program, verbose=args.va)
 
         all_funcs = []
         skip_count = 0
@@ -132,11 +132,11 @@ def decompile(args: Namespace):
                 if any([re.search(fil, f.name, re.IGNORECASE) for fil in args.filters]):
                     all_funcs.append(f)
                 else:
-                    ski
+                    skip_count += 1
             else:
                 all_funcs.append(f)
 
-        # print(f'Skipped {skip_count} FUN_ functions')
+        print(f'Skipped {skip_count} functions that failed to match any of {args.filters}')
 
         if args.cppexport:
             print(f"Decompiling {len(all_funcs)} functions using Ghidra's CppExporter")
