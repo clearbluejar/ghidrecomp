@@ -46,7 +46,26 @@ pip install ghidrecomp
 
 ### Devcontainer / Docker
 
-Don't want to install Ghidra and Java on your host?  Use the [.devcontainer](.devcontainer) in this repo. If you don't know how, follow the detailed instructions here: [ghidra-python-vscode-devcontainer-skeleton quick setup](https://github.com/clearbluejar/ghidra-python-vscode-devcontainer-skeleton#quick-start-setup---dev-container--best-option).
+#### Option 1 - Devcontainer
+Use the [.devcontainer](.devcontainer) in this repo. If you don't know how, follow the detailed instructions here: [ghidra-python-vscode-devcontainer-skeleton quick setup](https://github.com/clearbluejar/ghidra-python-vscode-devcontainer-skeleton#quick-start-setup---dev-container--best-option).
+
+#### Option 2 - Docker
+Use the published repo image with Ghidra and Java already installed.
+
+```bash
+docker pull ghcr.io/clearbluejar/ghidrecomp:latest
+docker run --user vscode  --rm -it ghcr.io/clearbluejar/ghidrecomp:latest bash
+```
+
+From within the image:
+```bash
+vscode ➜ / $ uname -a
+Linux 4da2fe33369a 5.15.49-linuxkit #1 SMP PREEMPT Tue Sep 13 07:51:32 UTC 2022 x86_64 GNU/Linux
+vscode ➜ / $ ls /ghidra/
+Extensions  GPL  Ghidra  LICENSE  bom.json  docs  ghidraRun  ghidraRun.bat  licenses  server  support
+vscode ➜ / $ pip install ghidrecomp
+Successfully installed Jpype1-1.4.1 ghidrecomp-0.1.0 packaging-23.0 pyhidra-0.4.1
+```
 
 
 ## Usage
