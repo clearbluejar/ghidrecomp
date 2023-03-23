@@ -163,5 +163,5 @@ def set_remote_pdbs(program: "ghidra.program.model.listing.Program", allow: bool
     from ghidra.app.plugin.core.analysis import PdbUniversalAnalyzer
     # Enable Remote Symbol Servers
 
-    PdbUniversalAnalyzer.setAllowRemoteOption(program, True)
-    PdbAnalyzer.setAllowRemoteOption(program, True)
+    PdbUniversalAnalyzer.setAllowRemoteOption(program, allow)
+    PdbAnalyzer.setAllowRemoteOption(program, allow)
