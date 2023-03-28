@@ -54,6 +54,30 @@ end
 
 The main purpose for this is to use the decomplilations for research and analysis.
 
+## TOC
+
+- [Ghidrecomp - Command Line Ghidra Decompiler](#ghidrecomp---command-line-ghidra-decompiler)
+  - [About](#about)
+  - [TOC](#toc)
+  - [Features](#features)
+  - [Usage](#usage)
+  - [Example Usage with Windows afd.sys:](#example-usage-with-windows-afdsys)
+    - [Command line](#command-line)
+    - [Output](#output)
+    - [Decompilation Output Dir](#decompilation-output-dir)
+  - [Example usage in Docker container](#example-usage-in-docker-container)
+    - [Command (Host)](#command-host)
+    - [Command (in container)](#command-in-container)
+    - [Output](#output-1)
+    - [Decompilation Output Dir](#decompilation-output-dir-1)
+  - [Installation](#installation)
+    - [Windows](#windows)
+    - [Linux / Mac](#linux--mac)
+    - [Devcontainer / Docker](#devcontainer--docker)
+      - [Option 1 - Devcontainer](#option-1---devcontainer)
+      - [Option 2 - Docker](#option-2---docker)
+
+
 ## Features
 *all these features are ultimately provided by Ghidra*
 
@@ -283,6 +307,192 @@ void AfdGetRemoteAddress(longlong param_1,undefined8 param_2,char param_3,undefi
   FUN_1c00655e1(uVar5,(undefined)param_2,cVar7,(undefined)param_4,in_stack_ffffffffffffffe0,
                 unaff_R15B,unaff_R14B,unaff_DIL,unaff_retaddr,uVar8,unaff_RBX,unaff_RSI);
   return;
+}
+```
+
+## Example usage in Docker container
+
+
+### Command (Host)
+```bash
+$ docker run --user vscode  --rm -it ghcr.io/clearbluejar/ghidrecomp:latest bash
+Unable to find image 'ghcr.io/clearbluejar/ghidrecomp:latest' locally
+latest: Pulling from clearbluejar/ghidrecomp
+32fb02163b6b: Pull complete
+167c7feebee8: Pull complete
+d6dfff1f6f3d: Pull complete
+e9cdcd4942eb: Pull complete
+ca3bce705f6c: Pull complete
+5e1c6c4f8bbf: Pull complete
+e7e563b10921: Pull complete
+9eb9d866c104: Pull complete
+8ca602e7301a: Pull complete
+124a51dde68b: Pull complete
+c04919d34655: Pull complete
+a2570739af5d: Pull complete
+e57c67fabbc5: Pull complete
+8da6a860f9e3: Pull complete
+ca6008c09918: Pull complete
+702a3b20cdb3: Pull complete
+bd0b7bd152dc: Pull complete
+7299f2e2483b: Pull complete
+4f4fb700ef54: Pull complete
+7cbbb1896fad: Pull complete
+1f309d93fb79: Pull complete
+d11b50be43c4: Pull complete
+7c66f674c44d: Pull complete
+8497280f5c51: Pull complete
+Digest: sha256:4e42285dc1d71c849b7c89fae6598691bdc7d0ee9ec55eb70ce00b5c722fba59
+Status: Downloaded newer image for ghcr.io/clearbluejar/ghidrecomp:latest
+```
+
+### Command (in container)
+```bash
+vscode ➜ / $ pip install ghidrecomp
+vscode ➜ / $ cd /tmp/
+vscode ➜ /tmp $ ghidrecomp /bin/ls
+```
+
+### Output
+```bash
+Starting decompliations: Namespace(bin='/bin/ls', cppexport=False, filters=None, project_path='.ghidra_projects', output_path='decompilations', sym_file_path=None, symbols_path='.symbols', skip_symbols=False, thread_count=12, va=False)
+INFO  Using log config file: jar:file:/ghidra/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)
+INFO  Using log file: /home/vscode/.ghidra/.ghidra_10.2.3_PUBLIC/application.log (LoggingInitialization)
+INFO  Loading user preferences: /home/vscode/.ghidra/.ghidra_10.2.3_PUBLIC/preferences (Preferences)
+INFO  Class search complete (898 ms) (ClassSearcher)
+INFO  Initializing SSL Context (SSLContextInitializer)
+INFO  Initializing Random Number Generator... (SecureRandomFactory)
+INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)
+INFO  Trust manager disabled, cacerts have not been set (ApplicationTrustManagerFactory)
+INFO  Creating project: /tmp/.ghidra_projects/ls/ls (DefaultProject)
+INFO  Starting cache cleanup: /tmp/vscode-Ghidra/fscache2 (FileCacheMaintenanceDaemon)
+INFO  Finished cache cleanup, estimated storage used: 0 (FileCacheMaintenanceDaemon)
+INFO  Using Loader: Executable and Linking Format (ELF) (AutoImporter)
+Setting up Symbol Server for symbols...
+path: .symbols level: 1
+Loaded well known /ghidra/Ghidra/Configurations/Public_Release/data/PDB_SYMBOL_SERVER_URLS.pdburl' length: 883'
+Symbol Server Configured path: SymbolServerService:
+        symbolStore: LocalSymbolStore: [ rootDir: /tmp/.symbols, storageLevel: -1],
+        symbolServers:
+                HttpSymbolServer: [ url: https://msdl.microsoft.com/download/symbols/, storageLevel: -1]
+                HttpSymbolServer: [ url: https://chromium-browser-symsrv.commondatastorage.googleapis.com/, storageLevel: -1]
+                HttpSymbolServer: [ url: https://symbols.mozilla.org/, storageLevel: -1]
+                HttpSymbolServer: [ url: https://software.intel.com/sites/downloads/symbols/, storageLevel: -1]
+                HttpSymbolServer: [ url: https://driver-symbols.nvidia.com/, storageLevel: -1]
+                HttpSymbolServer: [ url: https://download.amd.com/dir/bin/, storageLevel: -1]
+Analyzing program ls
+INFO  DWARF external debug information found: ExternalDebugInfo [filename=61a544c35b9dc1d172d1a1c09043e487326966.debug, crc=d165fd8a, hash=6461a544c35b9dc1d172d1a1c09043e487326966] (ExternalDebugFilesService)
+INFO  Unable to find DWARF information, skipping DWARF analysis (DWARFAnalyzer)
+INFO  hit non-returning function, restarting decompiler switch analyzer later (DecompilerSwitchAnalyzer)
+INFO  Packed database cache: /tmp/vscode-Ghidra/packed-db-cache (PackedDatabaseCache)
+INFO  -----------------------------------------------------
+    ASCII Strings                              0.565 secs
+    Apply Data Archives                        0.462 secs
+    Call Convention ID                         0.013 secs
+    Call-Fixup Installer                       0.009 secs
+    Create Address Tables                      0.077 secs
+    Create Address Tables - One Time           0.025 secs
+    Create Function                            0.036 secs
+    DWARF                                      0.011 secs
+    Data Reference                             0.054 secs
+    Decompiler Switch Analysis                 0.136 secs
+    Decompiler Switch Analysis - One Time      2.743 secs
+    Demangler GNU                              0.044 secs
+    Disassemble Entry Points                   1.104 secs
+    ELF Scalar Operand References              0.285 secs
+    Embedded Media                             0.011 secs
+    External Entry References                  0.000 secs
+    Function ID                                0.225 secs
+    Function Start Search                      0.033 secs
+    Function Start Search After Code           0.012 secs
+    Function Start Search After Data           0.012 secs
+    GCC Exception Handlers                     0.319 secs
+    Non-Returning Functions - Discovered       0.189 secs
+    Non-Returning Functions - Known            0.005 secs
+    Reference                                  0.129 secs
+    Shared Return Calls                        0.092 secs
+    Stack                                      1.734 secs
+    Subroutine References                      0.048 secs
+    Subroutine References - One Time           0.000 secs
+    x86 Constant Reference Analyzer            2.017 secs
+-----------------------------------------------------
+     Total Time   10 secs
+-----------------------------------------------------
+ (AutoAnalysisManager)
+Skipped 0 functions that failed to match any of None
+Decompiling 520 functions using 12 threads
+Setup 12 decompliers
+Completed 100 and 19%
+Completed 200 and 38%
+Completed 300 and 57%
+WARN  Decompiling 00126010, pcode error at 00126010: Unable to disassemble EXTERNAL block location: 00126010 (DecompileCallback)
+
+Decompiled 520 functions for ls in 5.361317157745361
+Wrote 520 decompilations for ls to decompilations/ls in 0.1671760082244873
+```
+
+
+### Decompilation Output Dir
+
+```bash
+vscode ➜ /tmp $ ls decompilations/ls/
+FUN_00104020-00104020.c  FUN_00108e10-00108e10.c  FUN_0010fc80-0010fc80.c  FUN_00116ef0-00116ef0.c                 bindtextdomain-001260d8.c   mbstowcs-00104150.c
+FUN_001046e0-001046e0.c  FUN_00108eb0-00108eb0.c  FUN_0010fd60-0010fd60.c  FUN_001173b0-001173b0.c                 calloc-00104390.c           mbstowcs-00126098.c
+FUN_001046e5-001046e5.c  FUN_00108fa0-00108fa0.c  FUN_0010fee0-0010fee0.c  FUN_00117430-00117430.c                 calloc-001261c0.c           memcmp-00104360.c
+FUN_001046ea-001046ea.c  FUN_001093a0-001093a0.c  FUN_00110180-00110180.c  FUN_001174b0-001174b0.c                 caseD_b-00104712.c          memcmp-001261a8.c
+FUN_001046ef-001046ef.c  FUN_00109850-00109850.c  FUN_001101e0-001101e0.c  FUN_00117530-00117530.c                 clock_gettime-00104170.c    memcpy-00104410.c
+...
+```
+
+```bash
+ cat decompilations/ls/FUN_0010eb20-0010eb20.c
+```
+```c
+void * FUN_0010eb20(void *param_1,char *param_2,void **param_3)
+
+{
+  size_t __n;
+  long lVar1;
+  long lVar2;
+  size_t __n_00;
+  void *__dest;
+  undefined *puVar3;
+  ulong uVar4;
+  undefined local_41;
+
+  lVar1 = FUN_0010e740();
+  lVar2 = FUN_0010e7a0(lVar1);
+  __n = (lVar1 - (long)param_1) + lVar2;
+  __n_00 = strlen(param_2);
+  if (lVar2 == 0) {
+    local_41 = 0x2e;
+    if (*param_2 != '/') {
+      local_41 = 0;
+    }
+    uVar4 = (ulong)(*param_2 == '/');
+  }
+  else if (*(char *)((long)param_1 + (__n - 1)) == '/') {
+    local_41 = 0;
+    uVar4 = 0;
+  }
+  else {
+    local_41 = 0x2f;
+    if (*param_2 == '/') {
+      local_41 = 0;
+    }
+    uVar4 = (ulong)(*param_2 != '/');
+  }
+  __dest = malloc(__n + 1 + __n_00 + uVar4);
+  if (__dest != (void *)0x0) {
+    puVar3 = (undefined *)mempcpy(__dest,param_1,__n);
+    *puVar3 = local_41;
+    if (param_3 != (void **)0x0) {
+      *param_3 = puVar3 + uVar4;
+    }
+    puVar3 = (undefined *)mempcpy(puVar3 + uVar4,param_2,__n_00);
+    *puVar3 = 0;
+  }
+  return __dest;
 }
 ```
 
