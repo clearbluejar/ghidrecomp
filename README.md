@@ -52,7 +52,7 @@ end
 
 ```
 
-The main purpose for this is to use the decomplilations for research and analysis. The tool relies on [Ghidra](https://ghidra-sre.org/) for decompilation and communicates to Ghidra with `jypype` via `pyhidra`.
+The main purpose for this is to use the decomplilations for research and analysis. The tool relies on [Ghidra](https://ghidra-sre.org/) for decompilation and communicates to Ghidra with `jpype` via `pyhidra`.
 
 ## TOC
 
