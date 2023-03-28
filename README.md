@@ -52,7 +52,7 @@ end
 
 ```
 
-The main purpose for this is to use the decomplilations for research and analysis.
+The main purpose for this is to use the decomplilations for research and analysis. The tool relies on [Ghidra](https://ghidra-sre.org/) for decompilation and communicates to Ghidra with `jypype` via `pyhidra`.
 
 ## TOC
 
@@ -91,11 +91,9 @@ The main purpose for this is to use the decomplilations for research and analysi
   - https://software.intel.com/sites/downloads/symbols/
   - https://driver-symbols.nvidia.com/
   - https://download.amd.com/dir/bin/
-- Specify the pdb for the binary
-- Filter functions that match regex (`--filter`)
+- Specify the pdb for the binary (`--sym-file-path`)
+- Filter functions to decompile that match regex (`--filter`)
 - Apply custom data types (`--gdt`)
-
-
 
 ## Usage
 
@@ -498,7 +496,7 @@ void * FUN_0010eb20(void *param_1,char *param_2,void **param_3)
 
 ## Installation
 
-1. [Download](https://github.com/NationalSecurityAgency/ghidra/releases) and [install Ghidra](https://htmlpreview.github.io/?https://github.com/NationalSecurityAgency/ghidra/blob/stable/GhidraDocs/InstallationGuide.html#Install).
+1. [Download](https://github.com/NationalSecurityAgency/ghidra/releases) and [install Ghidra](https://htmlpreview.github.io/?https://github.com/NationalSecurityAgency/ghidra/blob/stable/GhidraDocs/InstallationGuide.html#Install) and [Java](https://htmlpreview.github.io/?https://github.com/NationalSecurityAgency/ghidra/blob/stable/GhidraDocs/InstallationGuide.html#JavaNotes) required for Ghidra.
 2. Set Ghidra Environment Variable `GHIDRA_INSTALL_DIR` to Ghidra install location.
 3. Pip install `ghidrecomp`
 
@@ -517,10 +515,13 @@ pip install ghidrecomp
 
 ### Devcontainer / Docker
 
+Avoid installing Ghidra and Java on your host by using a **devcontainer**. 
+
 #### Option 1 - Devcontainer
 Use the [.devcontainer](.devcontainer) in this repo. If you don't know how, follow the detailed instructions here: [ghidra-python-vscode-devcontainer-skeleton quick setup](https://github.com/clearbluejar/ghidra-python-vscode-devcontainer-skeleton#quick-start-setup---dev-container--best-option).
 
 #### Option 2 - Docker
+
 Use the published repo image with Ghidra and Java already installed.
 
 ```bash
