@@ -8,9 +8,54 @@
 
 ## About
 
-This tool decompiles all the functions of a binary and writes them to a directory. The main purpose for this is to use the decomplilations for research and analysis.
+This Python command line tool decompiles all functions of a binary and writes them to a directory in separate `C` files:
+
+```mermaid
+flowchart LR
+
+a(filename ) --> b[ghidrecomp]
+a2[(Symbol Server)] --> b
+
+b --> e(Ghidra Project Files)
+b --> decompilations 
+
+subgraph decompilations
+    direction LR
+    i(func1.c)
+    h(func2.c)
+    f(func3.c)
+end
+
+```
+
+
+Or a single file `C` and header file with `--cppexport`:
+
+
+```mermaid
+flowchart LR
+
+a(filename ) --> b[ghidrecomp]
+a2[(Symbol Server)] --> b
+
+b --> e(Ghidra Project Files)
+
+b --> singlefile 
+
+
+subgraph singlefile
+  direction LR
+  s1(all_funcs.c)
+  s2(all_funcs.h)
+end
+
+
+```
+
+The main purpose for this is to use the decomplilations for research and analysis.
 
 ## Features
+*all these features are ultimately provided by Ghidra*
 
 - Decompile all the functions (threaded)
   - to a folder (`-o OUTPUT_PATH`)
@@ -24,48 +69,8 @@ This tool decompiles all the functions of a binary and writes them to a director
   - https://download.amd.com/dir/bin/
 - Specify the pdb for the binary
 - Filter functions that match regex (`--filter`)
+- Apply custom data types (`--gdt`)
 
-## Installation
-
-1. [Download](https://github.com/NationalSecurityAgency/ghidra/releases) and [install Ghidra](https://htmlpreview.github.io/?https://github.com/NationalSecurityAgency/ghidra/blob/stable/GhidraDocs/InstallationGuide.html#Install).
-2. Set Ghidra Environment Variable `GHIDRA_INSTALL_DIR` to Ghidra install location.
-3. Pip install `ghidrecomp`
-
-### Windows
-
-```powershell
-PS C:\Users\user> [System.Environment]::SetEnvironmentVariable('GHIDRA_INSTALL_DIR','C:\ghidra_10.2.3_PUBLIC_20230208\ghidra_10.2.3_PUBLIC')
-PS C:\Users\user> pip install ghidrecomp
-```
-### Linux / Mac
-
-```bash
-export GHIDRA_INSTALL_DIR="/path/to/ghidra/"
-pip install ghidrecomp
-```
-
-### Devcontainer / Docker
-
-#### Option 1 - Devcontainer
-Use the [.devcontainer](.devcontainer) in this repo. If you don't know how, follow the detailed instructions here: [ghidra-python-vscode-devcontainer-skeleton quick setup](https://github.com/clearbluejar/ghidra-python-vscode-devcontainer-skeleton#quick-start-setup---dev-container--best-option).
-
-#### Option 2 - Docker
-Use the published repo image with Ghidra and Java already installed.
-
-```bash
-docker pull ghcr.io/clearbluejar/ghidrecomp:latest
-docker run --user vscode  --rm -it ghcr.io/clearbluejar/ghidrecomp:latest bash
-```
-
-From within the image:
-```bash
-vscode ➜ / $ uname -a
-Linux 4da2fe33369a 5.15.49-linuxkit #1 SMP PREEMPT Tue Sep 13 07:51:32 UTC 2022 x86_64 GNU/Linux
-vscode ➜ / $ ls /ghidra/
-Extensions  GPL  Ghidra  LICENSE  bom.json  docs  ghidraRun  ghidraRun.bat  licenses  server  support
-vscode ➜ / $ pip install ghidrecomp
-Successfully installed Jpype1-1.4.1 ghidrecomp-0.1.0 packaging-23.0 pyhidra-0.4.1
-```
 
 
 ## Usage
@@ -99,7 +104,7 @@ options:
 ```
 
 
-## Sample Usage:
+## Example Usage with Windows afd.sys:
 
 ### Command line
 ```bash
@@ -280,3 +285,47 @@ void AfdGetRemoteAddress(longlong param_1,undefined8 param_2,char param_3,undefi
   return;
 }
 ```
+
+## Installation
+
+1. [Download](https://github.com/NationalSecurityAgency/ghidra/releases) and [install Ghidra](https://htmlpreview.github.io/?https://github.com/NationalSecurityAgency/ghidra/blob/stable/GhidraDocs/InstallationGuide.html#Install).
+2. Set Ghidra Environment Variable `GHIDRA_INSTALL_DIR` to Ghidra install location.
+3. Pip install `ghidrecomp`
+
+### Windows
+
+```powershell
+PS C:\Users\user> [System.Environment]::SetEnvironmentVariable('GHIDRA_INSTALL_DIR','C:\ghidra_10.2.3_PUBLIC_20230208\ghidra_10.2.3_PUBLIC')
+PS C:\Users\user> pip install ghidrecomp
+```
+### Linux / Mac
+
+```bash
+export GHIDRA_INSTALL_DIR="/path/to/ghidra/"
+pip install ghidrecomp
+```
+
+### Devcontainer / Docker
+
+#### Option 1 - Devcontainer
+Use the [.devcontainer](.devcontainer) in this repo. If you don't know how, follow the detailed instructions here: [ghidra-python-vscode-devcontainer-skeleton quick setup](https://github.com/clearbluejar/ghidra-python-vscode-devcontainer-skeleton#quick-start-setup---dev-container--best-option).
+
+#### Option 2 - Docker
+Use the published repo image with Ghidra and Java already installed.
+
+```bash
+docker pull ghcr.io/clearbluejar/ghidrecomp:latest
+docker run --user vscode  --rm -it ghcr.io/clearbluejar/ghidrecomp:latest bash
+```
+
+From within the image:
+```bash
+vscode ➜ / $ uname -a
+Linux 4da2fe33369a 5.15.49-linuxkit #1 SMP PREEMPT Tue Sep 13 07:51:32 UTC 2022 x86_64 GNU/Linux
+vscode ➜ / $ ls /ghidra/
+Extensions  GPL  Ghidra  LICENSE  bom.json  docs  ghidraRun  ghidraRun.bat  licenses  server  support
+vscode ➜ / $ pip install ghidrecomp
+Successfully installed Jpype1-1.4.1 ghidrecomp-0.1.0 packaging-23.0 pyhidra-0.4.1
+```
+
+
