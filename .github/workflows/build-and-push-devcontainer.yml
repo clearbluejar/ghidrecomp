@@ -14,6 +14,19 @@ jobs:
 
       - name: Checkout (GitHub)
         uses: actions/checkout@v3
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3
+      
+      - name: Get Version For Tag
+        id: get_version
+        run: |
+          pip install -e .
+          version=$(ghidrecomp -v)
+          echo "ghidrecomp_ver=$version" >> $GITHUB_OUTPUT
+          echo $ghidrecomp_ver
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2 
@@ -27,6 +40,9 @@ jobs:
         with:
           imageName: ghcr.io/clearbluejar/ghidrecomp
           cacheFrom: ghcr.io/clearbluejar/ghidrecomp
+          imageTag: latest,${{ steps.get_version.outputs.ghidrecomp_ver}}
+          platform: linux/arm/v7,linux/arm64/v8,linux/amd64
+        
           push: always
           runCmd: |
             find .
