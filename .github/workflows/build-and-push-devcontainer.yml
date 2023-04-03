@@ -62,7 +62,7 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           imageName: ghcr.io/clearbluejar/ghidrecomp
-          cacheFrom: ghcr.io/clearbluejar/ghidrecomp
+          # cacheFrom: ghcr.io/clearbluejar/ghidrecomp
           imageTag: latest,${{ steps.get_version.outputs.ghidrecomp_ver}}
           platform: linux/arm64,linux/amd64
           push: never
