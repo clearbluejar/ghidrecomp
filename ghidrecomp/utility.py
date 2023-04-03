@@ -3,6 +3,8 @@ import multiprocessing
 from pathlib import Path
 from typing import Union, TYPE_CHECKING
 
+from ghidrecomp import __version__
+
 THREAD_COUNT = multiprocessing.cpu_count()
 
 # needed for ghidra python vscode autocomplete
@@ -21,6 +23,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--filter', dest='filters', action='append', help='Regex match for function name')
     parser.add_argument('--project-path', help='Path to base ghidra projects ', default='.ghidra_projects')
     parser.add_argument('-o', '--output-path', help='Location for all decompilations', default='decompilations')
+    parser.add_argument("-v", "--version", action="version", version=__version__)
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--sym-file-path', help='Specify single pdb symbol file for bin')
@@ -30,6 +33,10 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('-t', '--thread-count', type=int,
                         help='Threads to use for processing. Defaults to cpu count', default=THREAD_COUNT)
     parser.add_argument('--va', help='Enable verbose analysis', action='store_true')
+
+    group = parser.add_argument_group('JVM Options')
+    group.add_argument('--max-ram-percent', help='Set JVM Max Ram %% of host RAM', default=50.0)
+    group.add_argument('--print-flags', help='Print JVM flags at start', action='store_true')
 
     return parser
 

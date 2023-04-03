@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from argparse import Namespace
 import concurrent.futures
 from time import time
-import pyhidra
+from pyhidra import HeadlessPyhidraLauncher, open_program
 
 from .utility import set_pdb, setup_symbol_server, set_remote_pdbs, analyze_program, get_pdb
 
@@ -99,9 +99,16 @@ def decompile(args: Namespace):
     output_path.mkdir(exist_ok=True, parents=True)
 
     # turn on verbose
-    pyhidra.start(True)
+    launcher = HeadlessPyhidraLauncher(True)
 
-    with pyhidra.open_program(bin_path, project_location=project_location, project_name=bin_path.name, analyze=False) as flat_api:
+    # set max % of host RAM
+    launcher.add_vmargs(f'-XX:MaxRAMPercentage={args.max_ram_percent}')
+    if args.print_flags:
+        launcher.add_vmargs('-XX:+PrintFlagsFinal')
+
+    launcher.start()
+
+    with open_program(bin_path, project_location=project_location, project_name=bin_path.name, analyze=False) as flat_api:
 
         from ghidra.util.task import ConsoleTaskMonitor
         from ghidra.program.model.listing import Program
@@ -137,7 +144,8 @@ def decompile(args: Namespace):
             else:
                 all_funcs.append(f)
 
-        print(f'Skipped {skip_count} functions that failed to match any of {args.filters}')
+        if skip_count > 0:
+            print(f'Skipped {skip_count} functions that failed to match any of {args.filters}')
 
         if args.cppexport:
             print(f"Decompiling {len(all_funcs)} functions using Ghidra's CppExporter")
