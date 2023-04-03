@@ -62,9 +62,13 @@
 			"version": "17",
 			"installGradle": true
 		},
-		"ghcr.io/clearbluejar/features/ghidra:1": {
+		"ghcr.io/clearbluejar/features/ghidra:1.1.0": {
 			// Ghidra Version: none, latest, 10.2, 10.1.5, 10.1.4, ...
-			"GHIDRA_VERSION": "latest"
+			"GHIDRA_VERSION": "latest",
 		}
-	}
+	},
+	// ensures java is this when ghidra is installed to support native bins
+	"overrideFeatureInstallOrder": [
+		"ghcr.io/devcontainers/features/java"
+	]
 }
