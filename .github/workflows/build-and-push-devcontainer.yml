@@ -48,8 +48,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # enables building of multi-platform images
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+      # - name: Set up QEMU
+      #   uses: docker/setup-qemu-action@v2
 
       - name: Create Docker Build Instance
         run: |
@@ -65,8 +65,4 @@ jobs:
           cacheFrom: ghcr.io/clearbluejar/ghidrecomp
           imageTag: latest,${{ steps.get_version.outputs.ghidrecomp_ver}}
           platform: linux/arm64,linux/amd64
-        
-          push: always
-          runCmd: |
-            find .
-            find /ghidra
+          push: never
