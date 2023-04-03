@@ -98,8 +98,9 @@ The main purpose for this is to use the decomplilations for research and analysi
 ## Usage
 
 ```
-usage: ghidrecomp [-h] [--cppexport] [--filter FILTERS] [--project-path PROJECT_PATH] [-o OUTPUT_PATH] [--sym-file-path SYM_FILE_PATH | -s SYMBOLS_PATH | --skip-symbols]
-                  [-t THREAD_COUNT] [--va]
+usage: ghidrecomp [-h] [--cppexport] [--filter FILTERS] [--project-path PROJECT_PATH] [-o OUTPUT_PATH] [-v]
+                  [--sym-file-path SYM_FILE_PATH | -s SYMBOLS_PATH | --skip-symbols] [-t THREAD_COUNT] [--va] [--max-ram-percent MAX_RAM_PERCENT]
+                  [--print-flags]
                   bin
 
 ghidrecomp - A Command Line Ghidra Decompiler
@@ -115,6 +116,7 @@ options:
                         Path to base ghidra projects (default: .ghidra_projects)
   -o OUTPUT_PATH, --output-path OUTPUT_PATH
                         Location for all decompilations (default: decompilations)
+  -v, --version         show program's version number and exit
   --sym-file-path SYM_FILE_PATH
                         Specify single pdb symbol file for bin (default: None)
   -s SYMBOLS_PATH, --symbols-path SYMBOLS_PATH
@@ -123,6 +125,11 @@ options:
   -t THREAD_COUNT, --thread-count THREAD_COUNT
                         Threads to use for processing. Defaults to cpu count (default: 8)
   --va                  Enable verbose analysis (default: False)
+
+JVM Options:
+  --max-ram-percent MAX_RAM_PERCENT
+                        Set JVM Max Ram % of host RAM (default: 50.0)
+  --print-flags         Print JVM flags at start (default: False)
 ```
 
 
