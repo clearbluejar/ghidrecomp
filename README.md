@@ -130,8 +130,8 @@ options:
 
 ### Command line
 ```bash
-wget https://msdl.microsoft.com/download/symbols/afd.sys/50989142a9000/afd.sys -o tests/data/afd.sys.10.0.22621.1415
-ghidrecomp tests/data/afd.sys.10.0.22621.1415
+wget https://msdl.microsoft.com/download/symbols/afd.sys/50989142a9000/afd.sys -O afd.sys.10.0.22621.1415
+ghidrecomp afd.sys.10.0.22621.1415
 ```
 
 ### Output
@@ -225,22 +225,39 @@ Wrote 1275 decompilations for afd.sys.10.0.22621.1344 to decompilations/afd.sys.
 
 ### Decompilation Output Dir
 ```bash
-$ ls decompilations/afd.sys.10.0.22621.1415/
- AFDETW_NRT_TRACE-1c0034128.c                              AfdReceiveDatagramProbeAndLockPages-1c000219c.c         FUN_1c0002920-1c0002920.c
- AFDETW_RIO_TRACE_BUFFER_CLEANUP-1c0046d84.c               AfdReceiveDatagramUnlockPages-1c0016994.c               FUN_1c0003f7f-1c0003f7f.c
- AFDETW_RIO_TRACE_BUFFER_DEREGISTER-1c0046e30.c            AfdReceiveEventHandler-1c003a380.c                      FUN_1c0004001-1c0004001.c
- AFDETW_RIO_TRACE_BUFFER_REGISTER-1c0046ec4.c              AfdReceiveExpeditedEventHandler-1c003a590.c             FUN_1c000400e-1c000400e.c
- AFDETW_RIO_TRACE_CQ_CLEANUP-1c0046fec.c                   AfdRefTLBaseEndpoint-1c000ece0.c                        FUN_1c00043b4-1c00043b4.c
- AFDETW_RIO_TRACE_CQ_CLOSE-1c0047098.c                     AfdReferenceCompartment-1c000fc5c.c                     FUN_1c000468b-1c000468b.c
- AFDETW_RIO_TRACE_CQ_CREATE-1c004712c.c                    AfdReferenceEndpoint-1c001bcc4.c                        FUN_1c000726f-1c000726f.c
- AFDETW_RIO_TRACE_CQ_NOTIFY-1c00472b8.c                    AfdReferenceGroup-1c006e390.c                           FUN_1c000767a-1c000767a.c
- AFDETW_RIO_TRACE_CQ_RESIZE-1c00473c0.c                    AfdRefreshConnection-1c0032afc.c                        FUN_1c0007a11-1c0007a11.c
- AFDETW_RIO_TRACE_INVALID_BUFFERID-1c00474f4.c             AfdRefreshEndpoint-1c0032cac.c                          FUN_1c0008952-1c0008952.c
- AFDETW_RIO_TRACE_INVALID_BUFFER_RANGE-1c00475a8.c         AfdReleaseReadLockFromDpcLevel-1c001c27c.c              FUN_1c000ad2d-1c000ad2d.c
- AFDETW_RIO_TRACE_INVALID_BUFFER_SHARING-1c0047684.c       AfdReleaseRegistryHandleWait-1c006e640.c                FUN_1c000cabe-1c000cabe.c
- AFDETW_RIO_TRACE_INVALID_BUFFER_SIZE-1c0047744.c          AfdRemoveConnectionFromTimerWheel-1c0019cc0.c           FUN_1c000cc0f-1c000cc0f.c
- AFDETW_RIO_TRACE_REGDOMAIN_CLOSE-1c0047800.c              AfdRemoveEndpointFromList-1c006455c.c                   FUN_1c000cdcf-1c000cdcf.c
- AFDETW_RIO_TRACE_REGDOMAIN_CREATE-1c00478b0.c             AfdReplenishListenBacklog-1c006bad4.c                   FUN_1c000cdee-1c000cdee.c
+$ tree decompilations | more
+decompilations
+└── afd.sys
+    ├── AFDETW_TRACEDATA_INDICATION-1c0008d00.c
+    ├── AFDETW_TRACEDISCONNECT-1c000f884.c
+    ├── AFDETW_TRACELISTEN-1c0016778.c
+    ├── AFDETW_TRACEOPTION-1c0012660.c
+    ├── AFDETW_TRACERECV-1c0001e38.c
+    ├── AFDETW_TRACERECVDATAGRAM-1c0009ef0.c
+    ├── AFDETW_TRACESEND-1c000d19c.c
+    ├── AFDETW_TRACESENDDATAGRAM-1c0007d10.c
+    ├── AFDETW_TRACESENDMSG-1c0015afc.c
+    ├── AFDETW_TRACESENDTO-1c00162dc.c
+    ├── AFDETW_TRACESTATUS-1c00204d2.c
+    ├── AFDETW_TRACETRANSFER-1c004189c.c
+    ├── AFDETW_TRACEWAITLISTEN-1c0013674.c
+    ├── AFD_PCW_INCREMENT_DROPPED_DATAGRAMS-1c00208e4.c
+    ├── AFD_PCW_INCREMENT_REJECTED_CONNECTIONS-1c0032aa4.c
+    ├── AfdAbortConnection-1c0033ec4.c
+    ├── AfdAbortTPackets-1c003d5ec.c
+    ├── AfdAccept-1c0018300.c
+    ├── AfdAcceptCore-1c00187d8.c
+    ├── AfdAcquireReadLock-1c0020b54.c
+    ├── AfdAcquireReadLockAtDpcLevel-1c000b0f4.c
+    ├── AfdAcquireWriteLock-1c001b8ac.c
+    ├── AfdAddAddressHandler-1c00662f0.c
+    ├── AfdAddConnectedReference-1c000f334.c
+    ├── AfdAddConnectionToTimerWheel-1c0036520.c
+    ├── AfdAddFreeConnection-1c006d7cc.c
+    ├── AfdAddressListChange$filt$0-1c001dcb7.c
+    ├── AfdAddressListChange$filt$1-1c001dce0.c    
+    ├── AfdBuildSendMsgTracker-1c00682ac.c
+... several lines omitted
  ```
 
  ```bash
@@ -433,13 +450,37 @@ Wrote 520 decompilations for ls to decompilations/ls in 0.1671760082244873
 ### Decompilation Output Dir
 
 ```bash
-vscode ➜ /tmp $ ls decompilations/ls/
-FUN_00104020-00104020.c  FUN_00108e10-00108e10.c  FUN_0010fc80-0010fc80.c  FUN_00116ef0-00116ef0.c                 bindtextdomain-001260d8.c   mbstowcs-00104150.c
-FUN_001046e0-001046e0.c  FUN_00108eb0-00108eb0.c  FUN_0010fd60-0010fd60.c  FUN_001173b0-001173b0.c                 calloc-00104390.c           mbstowcs-00126098.c
-FUN_001046e5-001046e5.c  FUN_00108fa0-00108fa0.c  FUN_0010fee0-0010fee0.c  FUN_00117430-00117430.c                 calloc-001261c0.c           memcmp-00104360.c
-FUN_001046ea-001046ea.c  FUN_001093a0-001093a0.c  FUN_00110180-00110180.c  FUN_001174b0-001174b0.c                 caseD_b-00104712.c          memcmp-001261a8.c
-FUN_001046ef-001046ef.c  FUN_00109850-00109850.c  FUN_001101e0-001101e0.c  FUN_00117530-00117530.c                 clock_gettime-00104170.c    memcpy-00104410.c
-...
+vscode ➜ /tmp $ tree decompilations
+decompilations
+└── ls
+    ├── _ITM_deregisterTMCloneTable-00134078.c
+    ├── _ITM_registerTMCloneTable-00134358.c
+    ├── __DT_FINI-00118930.c
+    ├── __DT_INIT-00103730.c
+    ├── __assert_fail-00103da0.c
+    ├── __assert_fail-00134370.c
+    ├── __ctype_b_loc-00103c00.c
+    ├── __ctype_b_loc-00134288.c
+    ├── __libc_start_main-00134190.c
+    ├── __lxstat-00103ce0.c
+    ├── __lxstat-001342f8.c
+    ├── exit-00134050.c
+    ├── fclose-00103990.c
+    ├── fclose-00134138.c
+    ├── fflush-00103ca0.c
+    ├── fflush-001342d8.c
+    ├── fflush_unlocked-00103c90.c
+    ├── fflush_unlocked-001342d0.c
+    ├── fgetfilecon-001037a0.c
+    ├── fgetfilecon-00134018.c
+    ├── fileno-00103950.c
+    ├── fileno-00134110.c
+    ├── fnmatch-00103c80.c
+    ├── fnmatch-001342c8.c
+    ├── fputc_unlocked-00103d20.c
+    ├── fputc_unlocked-00134320.c
+    ├── fputs_unlocked-00103d40.c
+... several more omitted
 ```
 
 ```bash
