@@ -40,14 +40,18 @@ jobs:
         uses: docker/setup-qemu-action@v2
 
       - name: Create Docker Build Instance
-        run: docker buildx create --use
+        run: |
+          docker buildx create --use
+          echo Contexts
+          docker context ls
+          docker buildx ls
 
       - name: Pre-build dev container image
         uses: devcontainers/ci@v0.3
         with:
           imageName: ghcr.io/clearbluejar/ghidrecomp
           cacheFrom: ghcr.io/clearbluejar/ghidrecomp
-          imageTag: latest,${{ steps.get_version.outputs.ghidrecomp_ver}}
+          # imageTag: latest,${{ steps.get_version.outputs.ghidrecomp_ver}}
           platform: linux/arm64,linux/amd64
         
           push: always
