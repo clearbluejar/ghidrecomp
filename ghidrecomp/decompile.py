@@ -6,7 +6,7 @@ import concurrent.futures
 from time import time
 import pyhidra
 
-from .utility import set_pdb, setup_symbol_server, set_remote_pdbs, analyze_program
+from .utility import set_pdb, setup_symbol_server, set_remote_pdbs, analyze_program, apply_gdt
 
 # needed for ghidra python vscode autocomplete
 if TYPE_CHECKING:
@@ -50,11 +50,11 @@ def decompile_func(func: 'ghidra.program.model.listing.Function',
 
     result: "DecompileResults" = decompilers[thread_id].decompileFunction(func, TIMEOUT, monitor)
 
-    if '' == result.errorMessage:
+    if '' == result.getErrorMessage():
         code = result.decompiledFunction.getC()
         sig = result.decompiledFunction.getSignature()
     else:
-        code = result.errorMessage
+        code = result.getErrorMessage()
         sig = None
 
     return [f'{func.getName()[:MAX_PATH_LEN]}-{func.entryPoint}', code, sig]
@@ -118,6 +118,12 @@ def decompile(args: Namespace):
 
                 # pdb = get_pdb(program)
                 # assert pdb is not None
+
+        # apply GDT
+        if args.gdt:
+            for gdt_path in args.gdt:
+                print(f'Applying gdt {gdt_path}...')
+                apply_gdt(program, gdt_path)
 
         # analyze program if we haven't yet
         analyze_program(program, verbose=args.va)
