@@ -22,6 +22,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--cppexport', action='store_true', help='Use Ghidras CppExporter to decompile to single file')
     parser.add_argument('--filter', dest='filters', action='append', help='Regex match for function name')
     parser.add_argument('--project-path', help='Path to base ghidra projects ', default='.ghidra_projects')
+    parser.add_argument('--gdt', help='Additional GDT to apply', nargs='?', action='append')
     parser.add_argument('-o', '--output-path', help='Location for all decompilations', default='decompilations')
     parser.add_argument("-v", "--version", action="version", version=__version__)
 
@@ -172,3 +173,24 @@ def set_remote_pdbs(program: "ghidra.program.model.listing.Program", allow: bool
 
     PdbUniversalAnalyzer.setAllowRemoteOption(program, allow)
     PdbAnalyzer.setAllowRemoteOption(program, allow)
+
+
+def apply_gdt(program: "ghidra.program.model.listing.Program", gdt_path:  Union[str, Path]):
+    """
+    Apply GDT to program
+    """
+
+    from ghidra.app.cmd.function import ApplyFunctionDataTypesCmd
+    from ghidra.program.model.symbol import SourceType
+    from java.io import File
+    from java.util import List
+    from ghidra.program.model.data import FileDataTypeManager
+    from ghidra.util.task import ConsoleTaskMonitor
+
+    gdt_path = Path(gdt_path)
+    monitor = ConsoleTaskMonitor()
+
+    archiveGDT = File(gdt_path)
+    archiveDTM = FileDataTypeManager.openFileArchive(archiveGDT, False)
+    cmd = ApplyFunctionDataTypesCmd(List.of(archiveDTM), None, SourceType.USER_DEFINED, True, True)
+    cmd.applyTo(program, monitor)
