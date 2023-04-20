@@ -3,9 +3,13 @@ from pathlib import Path
 from typing import Union, TYPE_CHECKING, Tuple, ContextManager, List
 
 import pyhidra
-from pyhidra.core import _setup_project
+from pyhidra.core import _setup_project, _analyze_program
 from ghidrecomp.utility import apply_gdt, get_parser, setup_symbol_server, set_remote_pdbs
 from ghidrecomp.decompile import analyze_program
+
+if TYPE_CHECKING:
+    from ghidra.program.flatapi import FlatProgramAPI
+    from ghidra.program.model.listing import Program
 
 # this function is need to open a program and not save it on exit.
 
