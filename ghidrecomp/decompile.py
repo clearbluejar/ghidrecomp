@@ -105,6 +105,8 @@ def decompile(args: Namespace):
     if args.print_flags:
         launcher.add_vmargs('-XX:+PrintFlagsFinal')
 
+    launcher.start()
+
     with open_program(bin_path, project_location=project_location, project_name=bin_path.name, analyze=False) as flat_api:
 
         from ghidra.util.task import ConsoleTaskMonitor
