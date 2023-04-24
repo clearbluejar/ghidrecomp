@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING
 from argparse import Namespace
 import concurrent.futures
 from time import time
-import pyhidra
+from pyhidra import HeadlessPyhidraLauncher, open_program
 
-from .utility import set_pdb, setup_symbol_server, set_remote_pdbs, analyze_program, apply_gdt
+from .utility import set_pdb, setup_symbol_server, set_remote_pdbs, analyze_program, get_pdb, apply_gdt
 
 # needed for ghidra python vscode autocomplete
 if TYPE_CHECKING:
@@ -35,7 +35,7 @@ def setup_decompliers(program: "ghidra.program.model.listing.Program", thread_co
 def decompile_func(func: 'ghidra.program.model.listing.Function',
                    decompilers: dict,
                    thread_id: int = 0,
-                   TIMEOUT: int = 0,
+                   timeout: int = 0,
                    monitor=None) -> list:
     """
     Decompile function and return [funcname, decompilation]
@@ -48,7 +48,7 @@ def decompile_func(func: 'ghidra.program.model.listing.Function',
     if monitor is None:
         monitor = ConsoleTaskMonitor()
 
-    result: "DecompileResults" = decompilers[thread_id].decompileFunction(func, TIMEOUT, monitor)
+    result: "DecompileResults" = decompilers[thread_id].decompileFunction(func, timeout, monitor)
 
     if '' == result.getErrorMessage():
         code = result.decompiledFunction.getC()
@@ -63,9 +63,9 @@ def decompile_func(func: 'ghidra.program.model.listing.Function',
 def decompile_to_single_file(path: Path,
                              prog: "ghidra.program.model.listing.Program",
                              create_header: bool = True,
-                             createFile: bool = True,
+                             create_file: bool = True,
                              emit_types: bool = True,
-                             excludeTags: bool = True,
+                             exclude_tags: bool = False,
                              tags: str = None,
                              verbose: bool = True):
     """
@@ -82,7 +82,7 @@ def decompile_to_single_file(path: Path,
     else:
         monitor = ConsoleTaskMonitor().DUMMY
 
-    decompiler = CppExporter(True, True, True, False, None)
+    decompiler = CppExporter(create_header, create_file, emit_types, exclude_tags, tags)
     decompiler.export(c_file, prog, prog.getMemory(), monitor)
 
 
@@ -98,9 +98,14 @@ def decompile(args: Namespace):
     output_path.mkdir(exist_ok=True, parents=True)
 
     # turn on verbose
-    pyhidra.start(True)
+    launcher = HeadlessPyhidraLauncher(True)
 
-    with pyhidra.open_program(bin_path, project_location=project_location, project_name=bin_path.name, analyze=False) as flat_api:
+    # set max % of host RAM
+    launcher.add_vmargs(f'-XX:MaxRAMPercentage={args.max_ram_percent}')
+    if args.print_flags:
+        launcher.add_vmargs('-XX:+PrintFlagsFinal')
+
+    with open_program(bin_path, project_location=project_location, project_name=bin_path.name, analyze=False) as flat_api:
 
         from ghidra.util.task import ConsoleTaskMonitor
         from ghidra.program.model.listing import Program
@@ -116,8 +121,9 @@ def decompile(args: Namespace):
 
                 set_remote_pdbs(program, True)
 
-                # pdb = get_pdb(program)
-                # assert pdb is not None
+            pdb = get_pdb(program)
+            if pdb is None:
+                print(f"Failed to find pdb for {program}")
 
         # apply GDT
         if args.gdt:
@@ -141,7 +147,8 @@ def decompile(args: Namespace):
             else:
                 all_funcs.append(f)
 
-        print(f'Skipped {skip_count} functions that failed to match any of {args.filters}')
+        if skip_count > 0:
+            print(f'Skipped {skip_count} functions that failed to match any of {args.filters}')
 
         if args.cppexport:
             print(f"Decompiling {len(all_funcs)} functions using Ghidra's CppExporter")
