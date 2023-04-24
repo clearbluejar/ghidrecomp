@@ -34,6 +34,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('-t', '--thread-count', type=int,
                         help='Threads to use for processing. Defaults to cpu count', default=THREAD_COUNT)
     parser.add_argument('--va', help='Enable verbose analysis', action='store_true')
+    parser.add_argument('--fa', help='Force new analysis (even if already analyzed)', action='store_true')
 
     group = parser.add_argument_group('JVM Options')
     group.add_argument('--max-ram-percent', help='Set JVM Max Ram %% of host RAM', default=50.0)
@@ -42,10 +43,10 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def analyze_program(program, verbose: bool = False):
-    # modified pyhidra.core._analyze_program
-
-    print(f"Analyzing program {program.name}")
+def analyze_program(program, verbose: bool = False, force_analysis: bool = False):
+    """
+    Modified pyhidra.core._analyze_program    
+    """
 
     from ghidra.program.flatapi import FlatProgramAPI
     from ghidra.util.task import ConsoleTaskMonitor
@@ -53,15 +54,18 @@ def analyze_program(program, verbose: bool = False):
     from ghidra.app.script import GhidraScriptUtil
 
     if verbose:
-        print('Enabling verbose analysis..')
+        print('Enabling verbose analysis...')
         monitor = ConsoleTaskMonitor()
         flat_api = FlatProgramAPI(program, monitor)
     else:
         flat_api = FlatProgramAPI(program)
 
-    if GhidraProgramUtilities.shouldAskToAnalyze(program):
+    if GhidraProgramUtilities.shouldAskToAnalyze(program) or force_analysis:
+        print(f"Analyzing program {program.name}...")
+
         GhidraScriptUtil.acquireBundleHostReference()
         try:
+            print(f"Running analyzers...")
             flat_api.analyzeAll(program)
             GhidraProgramUtilities.setAnalyzedFlag(program, True)
         finally:
@@ -175,7 +179,7 @@ def set_remote_pdbs(program: "ghidra.program.model.listing.Program", allow: bool
     PdbAnalyzer.setAllowRemoteOption(program, allow)
 
 
-def apply_gdt(program: "ghidra.program.model.listing.Program", gdt_path:  Union[str, Path]):
+def apply_gdt(program: "ghidra.program.model.listing.Program", gdt_path:  Union[str, Path], verbose: bool = False):
     """
     Apply GDT to program
     """
@@ -188,7 +192,12 @@ def apply_gdt(program: "ghidra.program.model.listing.Program", gdt_path:  Union[
     from ghidra.util.task import ConsoleTaskMonitor
 
     gdt_path = Path(gdt_path)
-    monitor = ConsoleTaskMonitor()
+
+    if verbose:
+        print('Enabling verbose gdt..')
+        monitor = ConsoleTaskMonitor()
+    else:
+        monitor = ConsoleTaskMonitor().DUMMY_MONITOR
 
     archiveGDT = File(gdt_path)
     archiveDTM = FileDataTypeManager.openFileArchive(archiveGDT, False)

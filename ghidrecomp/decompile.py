@@ -123,10 +123,10 @@ def decompile(args: Namespace):
         if args.gdt:
             for gdt_path in args.gdt:
                 print(f'Applying gdt {gdt_path}...')
-                apply_gdt(program, gdt_path)
+                apply_gdt(program, gdt_path, verbose=args.va)
 
         # analyze program if we haven't yet
-        analyze_program(program, verbose=args.va)
+        analyze_program(program, verbose=args.va, force_analysis=args.fa)
 
         all_funcs = []
         skip_count = 0
