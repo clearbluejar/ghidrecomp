@@ -13,7 +13,8 @@
 			// Options
 			"NODE_VERSION": "none",
 			// build from cache when available
-			"cacheFrom": "ghcr.io/clearbluejar/ghidrecomp"
+			"cacheFrom": "ghcr.io/clearbluejar/ghidrecomp",
+			"containerUser": "vscode"
 		}
 	},
 	// Configure tool-specific properties.
