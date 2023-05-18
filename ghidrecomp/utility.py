@@ -2,6 +2,7 @@ import argparse
 import multiprocessing
 from pathlib import Path
 from typing import Union, TYPE_CHECKING
+from pyhidra import launcher
 
 from ghidrecomp import __version__
 
@@ -42,6 +43,19 @@ def get_parser() -> argparse.ArgumentParser:
 
     return parser
 
+def mark_progam_analyzed(program):
+    """
+    Handle changed Ghidra API GhidraProgramUtilities 10.3+
+    """
+    from ghidra.program.util import GhidraProgramUtilities
+
+    ghidra_ver = launcher.get_ghidra_version().split('.')
+
+    if int(ghidra_ver[0]) == 10:
+        if int(ghidra_ver[1]) >= 3:
+            GhidraProgramUtilities.markProgramAnalyzed(program)        
+        else:
+            GhidraProgramUtilities.setAnalyzedFlag(program,True)
 
 def analyze_program(program, verbose: bool = False, force_analysis: bool = False):
     """
@@ -67,7 +81,7 @@ def analyze_program(program, verbose: bool = False, force_analysis: bool = False
         try:
             print(f"Running analyzers...")
             flat_api.analyzeAll(program)
-            GhidraProgramUtilities.setAnalyzedFlag(program, True)
+            mark_progam_analyzed(program)
         finally:
             GhidraScriptUtil.releaseBundleHostReference()
     else:
@@ -200,6 +214,9 @@ def apply_gdt(program: "ghidra.program.model.listing.Program", gdt_path:  Union[
         monitor = ConsoleTaskMonitor().DUMMY_MONITOR
 
     archiveGDT = File(gdt_path)
-    archiveDTM = FileDataTypeManager.openFileArchive(archiveGDT, False)
-    cmd = ApplyFunctionDataTypesCmd(List.of(archiveDTM), None, SourceType.USER_DEFINED, True, True)
+    archiveDTM = FileDataTypeManager.openFileArchive(archiveGDT, False)    
+    always_replace = True
+    createBookmarksEnabled = True
+    cmd = ApplyFunctionDataTypesCmd(List.of(archiveDTM), None, SourceType.USER_DEFINED,
+                                    always_replace, createBookmarksEnabled)
     cmd.applyTo(program, monitor)
