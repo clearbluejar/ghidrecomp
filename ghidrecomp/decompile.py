@@ -133,6 +133,10 @@ def decompile(args: Namespace):
                 print(f'Applying gdt {gdt_path}...')
                 apply_gdt(program, gdt_path, verbose=args.va)
 
+        gdt_names = [name for name in program.getDataTypeManager().getSourceArchives()]
+        if len(gdt_names) > 0:
+            print(f'Using file gdts: {gdt_names}')
+
         # analyze program if we haven't yet
         analyze_program(program, verbose=args.va, force_analysis=args.fa)
 
