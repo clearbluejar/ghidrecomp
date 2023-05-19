@@ -24,6 +24,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--filter', dest='filters', action='append', help='Regex match for function name')
     parser.add_argument('--project-path', help='Path to base ghidra projects ', default='.ghidra_projects')
     parser.add_argument('--gdt', help='Additional GDT to apply', nargs='?', action='append')
+    group.add_argument('--callgraphs',  help='Generate callgraph markdown for decompiled functions', action='store_true')
     parser.add_argument('-o', '--output-path', help='Location for all decompilations', default='decompilations')
     parser.add_argument("-v", "--version", action="version", version=__version__)
 
@@ -40,6 +41,10 @@ def get_parser() -> argparse.ArgumentParser:
     group = parser.add_argument_group('JVM Options')
     group.add_argument('--max-ram-percent', help='Set JVM Max Ram %% of host RAM', default=50.0)
     group.add_argument('--print-flags', help='Print JVM flags at start', action='store_true')
+
+    group = parser.add_argument_group('Callgraph Options')
+    group.add_argument('--callgraph-template', help='Replace default callgraph template')
+
 
     return parser
 
