@@ -5,6 +5,7 @@ import base64
 import zlib
 import json
 from typing import List, Union, Tuple, TYPE_CHECKING
+from functools import lru_cache
 
 import pyhidra
 
@@ -15,12 +16,7 @@ if TYPE_CHECKING:
     from ghidra_builtins import *
 
 
-
 class CallGraph:
-
-    # Java imports
-    from ghidra.util.task import ConsoleTaskMonitor
-    from ghidra.program.model.listing import Function
 
     def __init__(self, root=None):
         self.graph = {}
@@ -30,7 +26,7 @@ class CallGraph:
         self.root = root
 
     def set_root(self, root: str):
-        self.graph.setdefault(root,[])
+        self.graph.setdefault(root, [])
         self.root = root
 
     def add_edge(self, node1, node2, depth):
@@ -122,8 +118,8 @@ class CallGraph:
 
         # used to create a key index for flowchart ids
         # once defineed, a func name can be represented by a symbol, saving space
-        node_keys = {}        
-        node_count = 0        
+        node_keys = {}
+        node_count = 0
         existing_base_links = set()
 
         # guess best orientation
@@ -132,7 +128,6 @@ class CallGraph:
                 direction = 'TD'
             else:
                 direction = 'LR'
-            
 
         mermaid_flow = '''flowchart {direction}\n{style}\n{links}\n'''
 
@@ -146,7 +141,7 @@ class CallGraph:
         else:
             links = set()
 
-            if endpoint_only:            
+            if endpoint_only:
 
                 endpoints = self.get_endpoints()
 
@@ -170,7 +165,7 @@ class CallGraph:
                     links.add(link)
 
             else:
-                    
+
                 for src, dst in self.graph.items():
 
                     if shaded_nodes and src in shaded_nodes:
@@ -192,8 +187,8 @@ class CallGraph:
                             dst_style_class = ''
 
                         # Build src --> dst link
-                        ## Don't add duplicate links
-                        ## Use short ids for func name to save space with node_keys
+                        # Don't add duplicate links
+                        # Use short ids for func name to save space with node_keys
                         if node_keys.get(src) is None:
                             node_keys[src] = node_count
                             node_count += 1
@@ -210,7 +205,7 @@ class CallGraph:
 
                         # record base link
                         current_base_link = f'{src} --> {node[0]}'
-                        
+
                         # don't add link if another already exists
                         if not current_base_link in existing_base_links:
                             link = f'{src_node} --> {dst_node}'
@@ -218,8 +213,6 @@ class CallGraph:
                             existing_base_links.add(current_base_link)
                         # else:
                         #     print('Duplicate base link found!')
-                
-                
 
         return mermaid_flow.format(links='\n'.join(set(links)), direction=direction, style=style)
 
@@ -264,14 +257,23 @@ class CallGraph:
 # don't really limit the graph
 MAX_DEPTH = 10000
 
+# limit times called  count = WIDTH X COUNT
+MAX_COUNT = 100
+
+
+@lru_cache(None)
+def get_calling_funcs(f: "ghidra.program.model.listing.Function", monitor):
+    return list(f.getCallingFunctions(monitor))
 
 
 # Recursively calling to build calling graph
-def get_calling(f: Function, cgraph: CallGraph = CallGraph(), depth: int = 0, visited: list = [], verbose=False,include_ns=True):
+
+def get_calling(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = CallGraph(), depth: int = 0, visited: list = None, verbose=True, include_ns=True, count=0):
     """
     Build a call graph of all calling functions
     Traverses depth first
     """
+    from ghidra.util.task import ConsoleTaskMonitor
     monitor = ConsoleTaskMonitor()
 
     if f == None:
@@ -281,9 +283,15 @@ def get_calling(f: Function, cgraph: CallGraph = CallGraph(), depth: int = 0, vi
         if verbose:
             print(f"root({f.getName(include_ns)})")
         cgraph.set_root(f.getName(include_ns))
+        visited = []
 
     if depth > MAX_DEPTH:
-        return cgraph
+        cgraph.add_edge(f.getName(include_ns), 'MAX_DEPTH_HIT', depth)
+        return None
+
+    if len(cgraph.graph) > MAX_COUNT:
+        print(f'HIT MAX COUNT {f.name}')
+        return None
 
     space = (depth+2)*'  '
 
@@ -299,15 +307,21 @@ def get_calling(f: Function, cgraph: CallGraph = CallGraph(), depth: int = 0, vi
 
         return cgraph
 
-    calling = f.getCallingFunctions(monitor)
+    calling = get_calling_funcs(f, monitor)
 
     visited.append([f.entryPoint.toString(), f.getName(True)])
 
     if len(calling) > 0:
-        
+
+        if len(calling) > 15:
+            print(len(calling))
+            print('what')
+
         depth = depth+1
 
         for c in calling:
+
+            count += 1
 
             currently_visited = visited.copy()
 
@@ -318,17 +332,22 @@ def get_calling(f: Function, cgraph: CallGraph = CallGraph(), depth: int = 0, vi
             cgraph.add_edge(c.getName(include_ns), f.getName(include_ns), depth)
 
             # Parse further functions
-            cgraph = get_calling(c, cgraph, depth, visited=currently_visited)
+            cgraph = get_calling(c, cgraph, depth, visited=currently_visited, count=count)
+    else:
+        if verbose:
+            print(f'{space} - END for {f.name}')
 
     return cgraph
 
 
 # Recursively calling to build called graph
-def get_called(f: Function, cgraph: CallGraph = CallGraph(), depth: int = 0, visited: list = [], verbose=False):
+def get_called(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = CallGraph(), depth: int = 0, visited: list = [], verbose=False):
     """
     Build a call graph of all called functions
     Traverses depth first
     """
+    from ghidra.util.task import ConsoleTaskMonitor
+    monitor = ConsoleTaskMonitor()
 
     if f == None:
         return None
@@ -386,22 +405,26 @@ def _wrap_mermaid(text: str) -> str:
     return f'''```mermaid\n{text}\n```'''
 
 # based on serialize func  https://github.com/mermaid-js/mermaid-live-editor/blob/b5978e6faf7635e39452855fb4d062d1452ab71b/src/lib/util/serde.ts#L19-L24
+
+
 def gen_mermaid_url(graph: str, edit=False) -> str:
     """
     Generate valid mermaid live edit and image links
     """
-    
-    mm_json = { 'code': graph, 'mermaid': { 'theme': 'dark'}, 'updateEditor': True, 'autoSync': True, 'updateDiagram': True, "editorMode":"code","panZoom": True }
+
+    mm_json = {'code': graph, 'mermaid': {'theme': 'dark'}, 'updateEditor': True,
+               'autoSync': True, 'updateDiagram': True, "editorMode": "code", "panZoom": True}
     base64_string = base64.urlsafe_b64encode(zlib.compress(json.dumps(mm_json).encode('utf-8'), 9)).decode('ascii')
-   
-    if edit:        
-        url = f'https://mermaid.live/edit#pako:{base64_string}'        
+
+    if edit:
+        url = f'https://mermaid.live/edit#pako:{base64_string}'
     else:
         url = f'https://mermaid.ink/img/svg/pako:{base64_string}'
 
     return url
 
-def gen_callgraph_md(f: Function, called: str, calling: str, calling_entrypoints: str, called_endpoints: str, called_mind: str,calling_mind: str ):
+
+def gen_callgraph_md(f: "ghidra.program.model.listing.Function", called: str, calling: str, calling_entrypoints: str, called_endpoints: str, called_mind: str, calling_mind: str):
 
     fname = f.getName(True)
 
@@ -461,10 +484,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='A demo Ghidra callgraph generation script')
 
     parser.add_argument('bin', help='Path to binary used for analysis')
-    parser.add_argument('--include',  action='append',help='Func name or partial name to include')
+    parser.add_argument('--include',  action='append', help='Func name or partial name to include')
     parser.add_argument('-s', '--symbol-path', help='Path to symbol path for bin')
     parser.add_argument('-o', '--output-path', help='Callgraph output directory.', default='.callgraphs')
-    parser.add_argument('-m', '--max-display-depth', help='Max Depth for graph generation. Will affect size of markdown')
+    parser.add_argument('-m', '--max-display-depth',
+                        help='Max Depth for graph generation. Will affect size of markdown')
 
     args = parser.parse_args()
 
@@ -485,9 +509,9 @@ if __name__ == "__main__":
     with pyhidra.open_program(bin_path, project_location=project_location, project_name=bin_path.name, analyze=False) as flat_api:
 
         from ghidra.program.util import GhidraProgramUtilities
-        from ghidra.app.script import GhidraScriptUtil        
+        from ghidra.app.script import GhidraScriptUtil
 
-        program: "ghidra.program.model.listing.Program" = flat_api.getCurrentProgram()        
+        program: "ghidra.program.model.listing.Program" = flat_api.getCurrentProgram()
 
         # configure symbol path for bin
         if args.symbol_path:
@@ -520,30 +544,34 @@ if __name__ == "__main__":
 
             print(f"Processing function: {f.getName(True)}")
 
-            calling = get_calling(f)            
+            calling = get_calling(f)
 
             if len(calling.graph) >= 700:
                 # too big for demo
-                print(f"Skipping {f.getName(True)}:\t\t\t\tcalling: {len(calling.graph)} {calling.max_depth}")                
+                print(f"Skipping {f.getName(True)}:\t\t\t\tcalling: {len(calling.graph)} {calling.max_depth}")
                 continue
-            
+
             called = get_called(f)
 
-            called_flow = called.gen_mermaid_flow_graph(shaded_nodes=called.get_endpoints(), max_display_depth=max_display_depth, direction='LR')
-            called_flow_ends = called.gen_mermaid_flow_graph(shaded_nodes=called.get_endpoints(), endpoint_only=True, direction='LR')
+            called_flow = called.gen_mermaid_flow_graph(
+                shaded_nodes=called.get_endpoints(), max_display_depth=max_display_depth, direction='LR')
+            called_flow_ends = called.gen_mermaid_flow_graph(
+                shaded_nodes=called.get_endpoints(), endpoint_only=True, direction='LR')
             called_mind = called.gen_mermaid_mind_map(max_display_depth=3)
 
-            calling_flow = calling.gen_mermaid_flow_graph(shaded_nodes=calling.get_endpoints(), max_display_depth=max_display_depth)
-            calling_flow_ends = calling.gen_mermaid_flow_graph(shaded_nodes=calling.get_endpoints(),endpoint_only=True)
+            calling_flow = calling.gen_mermaid_flow_graph(
+                shaded_nodes=calling.get_endpoints(), max_display_depth=max_display_depth)
+            calling_flow_ends = calling.gen_mermaid_flow_graph(shaded_nodes=calling.get_endpoints(), endpoint_only=True)
             calling_mind = calling.gen_mermaid_mind_map(max_display_depth=7)
 
             if len(calling.graph) > 5 or args.include:
-                print(f"Processing {f.getName(True)}:\t\t\t\tcalling: {len(calling.graph)} {calling.max_depth} called: {len(called.graph)} {called.max_depth}")
+                print(
+                    f"Processing {f.getName(True)}:\t\t\t\tcalling: {len(calling.graph)} {calling.max_depth} called: {len(called.graph)} {called.max_depth}")
 
                 file_name = re.sub(r'[^\w_. -]', '_', f.getName())
-                file_name = file_name[:100]  #truncate
-                
-                if len(calling.graph) < 300 and len(called.graph) < 600:                
+                file_name = file_name[:100]  # truncate
+
+                if len(calling.graph) < 300 and len(called.graph) < 600:
                     # print(calling_flow)
                     # print(calling_mind)
                     # print(calling.get_endpoints())
@@ -553,11 +581,13 @@ if __name__ == "__main__":
                     # print(called.get_endpoints())
 
                     graph_path = output_path / Path(file_name + '.flow.md')
-                    mind_path = output_path / Path(file_name + '.mind.md')                
-                    #graph_path.write_text(_wrap_mermaid(calling_flow_ends))
-                    graph_path.write_text(gen_callgraph_md(f,called_flow,calling_flow,calling_flow_ends,called_flow_ends, called_mind, calling_mind))
+                    mind_path = output_path / Path(file_name + '.mind.md')
+                    # graph_path.write_text(_wrap_mermaid(calling_flow_ends))
+                    graph_path.write_text(gen_callgraph_md(f, called_flow, calling_flow,
+                                          calling_flow_ends, called_flow_ends, called_mind, calling_mind))
                     # graph_path.write_text(_wrap_mermaid(calling_flow) + '\n' + _wrap_mermaid(called_flow))
-                    mind_path.write_text(_wrap_mermaid(calling_mind) + '\n' + _wrap_mermaid(called_mind))                            
+                    mind_path.write_text(_wrap_mermaid(calling_mind) + '\n' + _wrap_mermaid(called_mind))
                 else:
                     # too big for demo
-                    print(f"Skipping {f.getName(True)}:\t\t\t\tcalling: {len(calling.graph)} {calling.max_depth} called: {len(called.graph)} {called.max_depth}")
+                    print(
+                        f"Skipping {f.getName(True)}:\t\t\t\tcalling: {len(calling.graph)} {calling.max_depth} called: {len(called.graph)} {called.max_depth}")

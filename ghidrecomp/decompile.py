@@ -7,6 +7,7 @@ from time import time
 from pyhidra import HeadlessPyhidraLauncher, open_program
 
 from .utility import set_pdb, setup_symbol_server, set_remote_pdbs, analyze_program, get_pdb, apply_gdt
+from .callgraph import get_called, get_calling
 
 # needed for ghidra python vscode autocomplete
 if TYPE_CHECKING:
@@ -84,6 +85,25 @@ def decompile_to_single_file(path: Path,
 
     decompiler = CppExporter(create_header, create_file, emit_types, exclude_tags, tags)
     decompiler.export(c_file, prog, prog.getMemory(), monitor)
+
+
+def gen_callgraph(func: 'ghidra.program.model.listing.Function', max_display_depth):
+
+    print(f'Generating callgrpah for : {func.name}')
+
+    if "AfdGetBufferSlow" in func.name:
+        print('hi')
+
+    calling = get_calling(func, verbose=True)
+
+    if calling is not None:
+
+        calling_flow = calling.gen_mermaid_flow_graph(
+            shaded_nodes=calling.get_endpoints(), max_display_depth=max_display_depth)
+    else:
+        calling_flow = 'MAX COUNT HIT'
+
+    return calling_flow
 
 
 def decompile(args: Namespace):
@@ -170,19 +190,37 @@ def decompile(args: Namespace):
 
             completed = 0
             decompilations = []
+            callgraphs = []
+
+            # Decompile all files
+            # start = time()
+            # with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
+            #     futures = (executor.submit(decompile_func, func, decompilers, thread_id % thread_count, monitor=monitor)
+            #                for thread_id, func in enumerate(all_funcs))
+
+            #     for future in concurrent.futures.as_completed(futures):
+            #         decompilations.append(future.result())
+            #         completed += 1
+            #         if (completed % 100) == 0:
+            #             print(f'Decompiled {completed} and {int(completed/len(all_funcs)*100)}%')
+
+            # print(f'Decompiled {completed} functions for {program.name} in {time() - start}')
+
+            # Generate callgrpahs for functions
             start = time()
             with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
-                futures = (executor.submit(decompile_func, func, decompilers, thread_id % thread_count, monitor=monitor)
-                           for thread_id, func in enumerate(all_funcs))
+                futures = (executor.submit(gen_callgraph, func, args.max_display_depth)
+                           for func in all_funcs if re.search(args.callgraph_filter, func.name) is not None)
 
                 for future in concurrent.futures.as_completed(futures):
-                    decompilations.append(future.result())
+                    callgraphs.append(future.result())
                     completed += 1
                     if (completed % 100) == 0:
-                        print(f'Completed {completed} and {int(completed/len(all_funcs)*100)}%')
+                        print(f'Generated callgraph {completed} and {int(completed/len(all_funcs)*100)}%')
 
             print(f'Decompiled {completed} functions for {program.name} in {time() - start}')
 
+            # Save all files
             start = time()
             with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
                 futures = (executor.submit((output_path / (name + '.c')).write_text, decomp)

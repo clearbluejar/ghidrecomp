@@ -24,7 +24,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--filter', dest='filters', action='append', help='Regex match for function name')
     parser.add_argument('--project-path', help='Path to base ghidra projects ', default='.ghidra_projects')
     parser.add_argument('--gdt', help='Additional GDT to apply', nargs='?', action='append')
-    group.add_argument('--callgraphs',  help='Generate callgraph markdown for decompiled functions', action='store_true')
+    parser.add_argument('--callgraphs',  help='Generate callgraph markdown', action='store_true')
     parser.add_argument('-o', '--output-path', help='Location for all decompilations', default='decompilations')
     parser.add_argument("-v", "--version", action="version", version=__version__)
 
@@ -43,10 +43,12 @@ def get_parser() -> argparse.ArgumentParser:
     group.add_argument('--print-flags', help='Print JVM flags at start', action='store_true')
 
     group = parser.add_argument_group('Callgraph Options')
-    group.add_argument('--callgraph-template', help='Replace default callgraph template')
-
+    group.add_argument('--callgraph-filter',
+                       help='Only generate callgraphs for functions matching filter', default='.')
+    group.add_argument('-m', '--max-display-depth', help='Max Depth for graph generation')
 
     return parser
+
 
 def mark_progam_analyzed(program):
     """
@@ -58,9 +60,10 @@ def mark_progam_analyzed(program):
 
     if int(ghidra_ver[0]) == 10:
         if int(ghidra_ver[1]) >= 3:
-            GhidraProgramUtilities.markProgramAnalyzed(program)        
+            GhidraProgramUtilities.markProgramAnalyzed(program)
         else:
-            GhidraProgramUtilities.setAnalyzedFlag(program,True)
+            GhidraProgramUtilities.setAnalyzedFlag(program, True)
+
 
 def analyze_program(program, verbose: bool = False, force_analysis: bool = False):
     """
@@ -219,7 +222,7 @@ def apply_gdt(program: "ghidra.program.model.listing.Program", gdt_path:  Union[
         monitor = ConsoleTaskMonitor().DUMMY_MONITOR
 
     archiveGDT = File(gdt_path)
-    archiveDTM = FileDataTypeManager.openFileArchive(archiveGDT, False)    
+    archiveDTM = FileDataTypeManager.openFileArchive(archiveGDT, False)
     always_replace = True
     createBookmarksEnabled = True
     cmd = ApplyFunctionDataTypesCmd(List.of(archiveDTM), None, SourceType.USER_DEFINED,
