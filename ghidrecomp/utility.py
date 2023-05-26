@@ -48,7 +48,7 @@ def get_parser() -> argparse.ArgumentParser:
     group.add_argument('--mdd', '--max-display-depth', help='Max Depth for graph generation', dest='max_display_depth')
     group.add_argument('--max-time-cg-gen', help='Max time in seconds to wait for callgraph gen.', default=5)
     group.add_argument('--cg-direction', help='Direction for callgraph.',
-                       choices=['calling', 'called', 'both'], default='both')
+                       choices=['calling', 'called', 'both'], default='calling')
 
     return parser
 

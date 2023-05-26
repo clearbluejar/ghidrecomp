@@ -145,6 +145,8 @@ def decompile(args: Namespace):
     with open_program(bin_path, project_location=project_location, project_name=bin_path.name, analyze=False) as flat_api:
 
         from ghidra.program.model.listing import Program
+        from ghidra.util.task import ConsoleTaskMonitor
+        monitor = ConsoleTaskMonitor()
 
         program: "Program" = flat_api.getCurrentProgram()
 
@@ -234,6 +236,7 @@ def decompile(args: Namespace):
             if args.callgraphs:
 
                 start = time()
+                completed = 0
 
                 if args.cg_direction == 'both':
                     directions = ['called', 'calling']
@@ -273,17 +276,5 @@ def decompile(args: Namespace):
                 print(f'Wrote {completed} callgraphs for {program.name} to {callgraph_path} in {time() - start}')
 
                 # save decomp callgraph full markdown
-                start = time()
-                callgraph_path = output_path / 'callgraphs'
-                callgraph_path.mkdir(exist_ok=True)
-                start = time()
-                with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
-                    futures = (executor.submit((callgraph_path / (name + f'.{ctype}.{direction}.all.md')).write_text, chart)
-                               for name, direction, callgraph, graphs in callgraphs for ctype, chart in graphs)
-
-                    for future in concurrent.futures.as_completed(futures):
-                        pass
-
-                print(f'Wrote {completed} callgraphs for {program.name} to {callgraph_path} in {time() - start}')
 
         return (all_funcs, decompilations, output_path, str(program.compiler), str(program.languageID), callgraphs)
