@@ -1,16 +1,14 @@
-import argparse
 import time
-from pathlib import Path
-import re
 import base64
 import zlib
 import json
 import sys
 
-from typing import List, Union, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from functools import lru_cache
 
-import pyhidra
+# don't really limit the graph
+MAX_DEPTH = sys.getrecursionlimit() - 1
 
 
 # needed for ghidra python vscode autocomplete
@@ -289,10 +287,6 @@ class CallGraph:
         return mermaid_chart
 
 
-# don't really limit the graph
-MAX_DEPTH = sys.getrecursionlimit() - 1
-
-
 @lru_cache(None)
 def get_calling_funcs_memo(f: "ghidra.program.model.listing.Function"):
     return list(f.getCallingFunctions(None))
@@ -324,7 +318,7 @@ def get_calling(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = 
         cgraph.add_edge(f.getName(include_ns), f'MAX_DEPTH_HIT - {depth}', depth)
         return cgraph
 
-    if (time.time() - start_time) > max_run_time:
+    if (time.time() - start_time) > float(max_run_time):
         raise TimeoutError(f'time expired for {f.getName(include_ns)}')
 
     space = (depth+2)*'  '
@@ -370,7 +364,7 @@ def func_is_external(f: "ghidra.program.model.listing.Function"):
 # Recursively calling to build called graph
 
 
-def get_called(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = CallGraph(), depth: int = 0, visited: list = [], verbose=False, include_ns=True, start_time=None, max_run_time=None):
+def get_called(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = CallGraph(), depth: int = 0, visited: list = [], verbose=False, include_ns=True, start_time=None, max_run_time=None, max_depth=MAX_DEPTH):
     """
     Build a call graph of all called functions
     Traverses depth first
@@ -386,11 +380,11 @@ def get_called(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = C
         visited = tuple()
         start_time = time.time()
 
-    if depth > MAX_DEPTH:
+    if depth > max_depth:
         cgraph.add_edge(f.getName(include_ns), f'MAX_DEPTH_HIT - {depth}', depth)
         return cgraph
 
-    if (time.time() - start_time) > max_run_time:
+    if (time.time() - start_time) > float(max_run_time):
         raise TimeoutError(f'time expired for {f.getName(include_ns)}')
 
     space = (depth+2)*'  '
@@ -445,12 +439,11 @@ def get_called(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = C
 def _wrap_mermaid(text: str) -> str:
     return f'''```mermaid\n{text}\n```'''
 
-# based on serialize func  https://github.com/mermaid-js/mermaid-live-editor/blob/b5978e6faf7635e39452855fb4d062d1452ab71b/src/lib/util/serde.ts#L19-L24
-
 
 def gen_mermaid_url(graph: str, edit=False) -> str:
     """
     Generate valid mermaid live edit and image links
+    # based on serialize func  https://github.com/mermaid-js/mermaid-live-editor/blob/b5978e6faf7635e39452855fb4d062d1452ab71b/src/lib/util/serde.ts#L19-L24
     """
 
     mm_json = {'code': graph, 'mermaid': {'theme': 'dark'}, 'updateEditor': True,
