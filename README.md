@@ -103,9 +103,9 @@ The main purpose for this is to use the decomplilations for research and analysi
 ## Usage
 
 ```
-usage: ghidrecomp [-h] [--cppexport] [--filter FILTERS] [--project-path PROJECT_PATH] [--gdt [GDT]] [-o OUTPUT_PATH] [-v]
-                  [--sym-file-path SYM_FILE_PATH | -s SYMBOLS_PATH | --skip-symbols] [-t THREAD_COUNT] [--va] [--fa] [--max-ram-percent MAX_RAM_PERCENT]
-                  [--print-flags]
+usage: ghidrecomp [-h] [--cppexport] [--filter FILTERS] [--project-path PROJECT_PATH] [--gdt [GDT]] [-o OUTPUT_PATH] [-v] [--skip-cache] [--sym-file-path SYM_FILE_PATH | -s SYMBOLS_PATH | --skip-symbols]
+                  [-t THREAD_COUNT] [--va] [--fa] [--max-ram-percent MAX_RAM_PERCENT] [--print-flags] [--callgraphs] [--callgraph-filter CALLGRAPH_FILTER] [--mdd MAX_DISPLAY_DEPTH] [--max-time-cg-gen MAX_TIME_CG_GEN]
+                  [--cg-direction {calling,called,both}]
                   bin
 
 ghidrecomp - A Command Line Ghidra Decompiler
@@ -123,6 +123,7 @@ options:
   -o OUTPUT_PATH, --output-path OUTPUT_PATH
                         Location for all decompilations (default: decompilations)
   -v, --version         show program's version number and exit
+  --skip-cache          Skip cached and genearate new decomp and callgraphs. (default: False)
   --sym-file-path SYM_FILE_PATH
                         Specify single pdb symbol file for bin (default: None)
   -s SYMBOLS_PATH, --symbols-path SYMBOLS_PATH
@@ -137,6 +138,17 @@ JVM Options:
   --max-ram-percent MAX_RAM_PERCENT
                         Set JVM Max Ram % of host RAM (default: 50.0)
   --print-flags         Print JVM flags at start (default: False)
+
+Callgraph Options:
+  --callgraphs          Generate callgraph markdown (default: False)
+  --callgraph-filter CALLGRAPH_FILTER
+                        Only generate callgraphs for functions matching filter (default: .)
+  --mdd MAX_DISPLAY_DEPTH, --max-display-depth MAX_DISPLAY_DEPTH
+                        Max Depth for graph generation (default: None)
+  --max-time-cg-gen MAX_TIME_CG_GEN
+                        Max time in seconds to wait for callgraph gen. (default: 5)
+  --cg-direction {calling,called,both}
+                        Direction for callgraph. (default: calling)
 ```
 
 
