@@ -26,6 +26,8 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--gdt', help='Additional GDT to apply', nargs='?', action='append')
     parser.add_argument('-o', '--output-path', help='Location for all decompilations', default='decompilations')
     parser.add_argument("-v", "--version", action="version", version=__version__)
+    parser.add_argument("--skip-cache", action='store_true',
+                        help='Skip cached and genearate new decomp and callgraphs.')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--sym-file-path', help='Specify single pdb symbol file for bin')
@@ -41,23 +43,19 @@ def get_parser() -> argparse.ArgumentParser:
     group.add_argument('--max-ram-percent', help='Set JVM Max Ram %% of host RAM', default=50.0)
     group.add_argument('--print-flags', help='Print JVM flags at start', action='store_true')
 
+    group = parser.add_argument_group('Callgraph Options')
+    group.add_argument('--callgraphs',  help='Generate callgraph markdown', action='store_true')
+    group.add_argument('--callgraph-filter',
+                       help='Only generate callgraphs for functions matching filter', default='.')
+    group.add_argument('--mdd', '--max-display-depth', help='Max Depth for graph generation', dest='max_display_depth')
+    group.add_argument('--max-time-cg-gen', help='Max time in seconds to wait for callgraph gen.', default=5)
+    group.add_argument('--cg-direction', help='Direction for callgraph.',
+                       choices=['calling', 'called', 'both'], default='calling')
+
     return parser
 
-def mark_progam_analyzed(program):
-    """
-    Handle changed Ghidra API GhidraProgramUtilities 10.3+
-    """
-    from ghidra.program.util import GhidraProgramUtilities
 
-    ghidra_ver = launcher.get_ghidra_version().split('.')
-
-    if int(ghidra_ver[0]) == 10:
-        if int(ghidra_ver[1]) >= 3:
-            GhidraProgramUtilities.markProgramAnalyzed(program)        
-        else:
-            GhidraProgramUtilities.setAnalyzedFlag(program,True)
-
-def analyze_program(program, verbose: bool = False, force_analysis: bool = False):
+def analyze_program(program, verbose: bool = False, force_analysis: bool = False, save: bool = False):
     """
     Modified pyhidra.core._analyze_program    
     """
@@ -81,7 +79,15 @@ def analyze_program(program, verbose: bool = False, force_analysis: bool = False
         try:
             print(f"Running analyzers...")
             flat_api.analyzeAll(program)
-            mark_progam_analyzed(program)
+            if hasattr(GhidraProgramUtilities, 'setAnalyzedFlag'):
+                GhidraProgramUtilities.setAnalyzedFlag(program, True)
+            elif hasattr(GhidraProgramUtilities, 'markProgramAnalyzed'):
+                GhidraProgramUtilities.markProgramAnalyzed(program)
+            else:
+                raise Exception('Missing set analyzed flag method!')
+
+            if save:
+                flat_api.saveProgram(program)
         finally:
             GhidraScriptUtil.releaseBundleHostReference()
     else:
@@ -214,7 +220,7 @@ def apply_gdt(program: "ghidra.program.model.listing.Program", gdt_path:  Union[
         monitor = ConsoleTaskMonitor().DUMMY_MONITOR
 
     archiveGDT = File(gdt_path)
-    archiveDTM = FileDataTypeManager.openFileArchive(archiveGDT, False)    
+    archiveDTM = FileDataTypeManager.openFileArchive(archiveGDT, False)
     always_replace = True
     createBookmarksEnabled = True
     cmd = ApplyFunctionDataTypesCmd(List.of(archiveDTM), None, SourceType.USER_DEFINED,

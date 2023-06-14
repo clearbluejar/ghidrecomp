@@ -72,6 +72,11 @@ The main purpose for this is to use the decomplilations for research and analysi
     - [Command (in container)](#command-in-container)
     - [Output](#output-1)
     - [Decompilation Output Dir](#decompilation-output-dir-1)
+  - [Example Usage with Windows afd.sys Callgraph:](#example-usage-with-windows-afdsys-callgraph)
+    - [Command line](#command-line-1)
+    - [Output](#output-2)
+    - [Sample Calling Callgraph Output AfdRestartDgConnect:](#sample-calling-callgraph-output-afdrestartdgconnect)
+    - [Sample MindMap Output for AfdRestartDgConnect](#sample-mindmap-output-for-afdrestartdgconnect)
   - [Installation](#installation)
     - [Windows](#windows)
     - [Linux / Mac](#linux--mac)
@@ -545,6 +550,275 @@ void * FUN_0010eb20(void *param_1,char *param_2,void **param_3)
   return __dest;
 }
 ```
+
+## Example Usage with Windows afd.sys Callgraph:
+
+### Command line
+
+Generate a decompilation and callgraph of all functions matching the function `--filter AfdRestart` and `--callgraph-filter AfdRestart`. 
+
+```bash
+ghidrecomp tests/data/afd.sys.10.0.22621.1415 --callgraph-filter AfdRestart --filter AfdRestart --callgraphs
+```
+
+### Output
+
+```bash
+Starting decompliations: Namespace(bin='tests/data/afd.sys.10.0.22621.1415', cppexport=False, filters=['AfdRestart'], project_path='.ghidra_projects', gdt=None, output_path='decompilations', skip_cache=True, sym_file_path=None, symbols_path='.symbols', skip_symbols=False, thread_count=8, va=False, fa=False, max_ram_percent=50.0, print_flags=False, callgraphs=True, callgraph_filter='AfdRestart', max_display_depth=None, max_time_cg_gen=5, cg_direction='calling')
+INFO  Using log config file: jar:file:/ghidra/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
+INFO  Using log file: /home/vscode/.ghidra/.ghidra_10.3_PUBLIC/application.log (LoggingInitialization)  
+INFO  Loading user preferences: /home/vscode/.ghidra/.ghidra_10.3_PUBLIC/preferences (Preferences)  
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (710 ms) (ClassSearcher)  
+INFO  Initializing SSL Context (SSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (ApplicationTrustManagerFactory)  
+INFO  Opening project: /workspaces/ghidrecomp/.ghidra_projects/afd.sys.10.0.22621.1415/afd.sys.10.0.22621.1415 (DefaultProject)  
+Setting up Symbol Server for symbols...
+path: .symbols level: 1
+Loaded well known /ghidra/Ghidra/Configurations/Public_Release/data/PDB_SYMBOL_SERVER_URLS.pdburl' length: 883'
+Symbol Server Configured path: SymbolServerService:
+        symbolStore: LocalSymbolStore: [ rootDir: /workspaces/ghidrecomp/.symbols, storageLevel: -1],
+        symbolServers:
+                HttpSymbolServer: [ url: https://msdl.microsoft.com/download/symbols/, storageLevel: -1]
+                HttpSymbolServer: [ url: https://chromium-browser-symsrv.commondatastorage.googleapis.com/, storageLevel: -1]
+                HttpSymbolServer: [ url: https://symbols.mozilla.org/, storageLevel: -1]
+                HttpSymbolServer: [ url: https://software.intel.com/sites/downloads/symbols/, storageLevel: -1]
+                HttpSymbolServer: [ url: https://driver-symbols.nvidia.com/, storageLevel: -1]
+                HttpSymbolServer: [ url: https://download.amd.com/dir/bin/, storageLevel: -1]
+Using file gdts: [windows_vs12_64]
+afd.sys.10.0.22621.1415 - .ProgramDB already analyzed... skipping
+INFO  Opening project: /workspaces/ghidrecomp/.ghidra_projects/afd.sys.10.0.22621.1415/afd.sys.10.0.22621.1415 (DefaultProject)  
+Skipped 1241 functions that failed to match any of ['AfdRestart']
+Decompiling 34 functions using 8 threads
+Setup 8 decompliers
+Decompiled 34 functions for afd.sys.10.0.22621.1415 in 0.8643746376037598
+0 decompilations already existed.
+Wrote 34 decompilations for afd.sys.10.0.22621.1415 to decompilations/afd.sys.10.0.22621.1415 in 0.0516660213470459
+
+Error: time expired for AfdLRRepostReceive func: AfdRestartBufferSend. max_run_time: 5 Increase timeout with --max-time-cg-gen MAX_TIME_CG_GEN
+
+Error: time expired for AfdReuseConnection func: AfdRestartDeviceControl. max_run_time: 5 Increase timeout with --max-time-cg-gen MAX_TIME_CG_GEN
+
+Error: time expired for AfdConnect func: AfdRestartSend. max_run_time: 5 Increase timeout with --max-time-cg-gen MAX_TIME_CG_GEN
+
+Error: time expired for WskProControlSocketCore func: AfdRestartAbort. max_run_time: 5 Increase timeout with --max-time-cg-gen MAX_TIME_CG_GEN
+
+Error: time expired for WskProIRPControlSocket func: AfdRestartDelayedAcceptListen. max_run_time: 5 Increase timeout with --max-time-cg-gen MAX_TIME_CG_GEN
+
+Error: time expired for AfdSanAcceptCore func: AfdRestartDisconnect. max_run_time: 5 Increase timeout with --max-time-cg-gen MAX_TIME_CG_GEN
+
+Error: time expired for AfdTPacketsBufferRead func: AfdRestartMdlReadComplete. max_run_time: 5 Increase timeout with --max-time-cg-gen MAX_TIME_CG_GEN
+
+Error: time expired for AfdSanAcceptCore func: AfdRestartTPDetachedSend. max_run_time: 5 Increase timeout with --max-time-cg-gen MAX_TIME_CG_GEN
+
+Error: time expired for AfdTLBindSecurityComplete func: AfdRestartTPacketsBufferRead. max_run_time: 5 Increase timeout with --max-time-cg-gen MAX_TIME_CG_GEN
+
+Error: time expired for FUN_1c0023892 func: AfdRestartTPacketsMdlRead. max_run_time: 5 Increase timeout with --max-time-cg-gen MAX_TIME_CG_GEN
+
+Error: time expired for WskProIRPControlSocket func: AfdRestartTPacketsSend. max_run_time: 5 Increase timeout with --max-time-cg-gen MAX_TIME_CG_GEN
+Callgraphed 34 functions for afd.sys.10.0.22621.1415 in 10.055054426193237
+Wrote 34 callgraphs for afd.sys.10.0.22621.1415 to decompilations/afd.sys.10.0.22621.1415/callgraphs in 10.055152416229248
+0 callgraphs already existed.
+
+```
+
+### Sample Calling Callgraph Output AfdRestartDgConnect:
+
+```mermaid
+flowchart TD
+classDef sh fill:#339933
+0["AfdRestartBufferReceiveWithUserIrp"] --> 1["AfdLRRepostReceive"]
+0 --> 2["AfdTLPostPendedReceives"]
+3["AfdRestartSuperAccept"] --> 4["AfdContinueSuperAccept"]
+5["AfdRestartAccept"] --> 6["AfdServiceSuperAccept"]
+7["AfdIssueDeviceControl"] --> 8["AfdRestartDeviceControl"]
+9["AfdBCommonChainedReceiveEventHandler"] --> 0
+9 --> 10["AfdCommonRestartBufferReceive"]
+9 --> 11["FUN_1c0008952"]
+12["AfdTLConnectedReceiveEventHandler"]:::sh --> 9
+13["AfdBChainedReceiveEventHandler"] --> 9
+14["AfdTdiSetEventHandlers"] --> 13
+14 --> 15["AfdBReceiveExpeditedEventHandler"]
+14 --> 16["AfdBReceiveEventHandler"]
+17["AfdRestartBufferReceive"] --> 10
+18["AfdBind"]:::sh --> 14
+18:::sh --> 19["AfdCreateConnection"]
+18:::sh --> 20["AfdTLBindSecurity"]
+18:::sh --> 21["AfdRestartBindGetAddress"]
+22["AfdRestartSend"] --> 22
+23["AfdTLSendComplete"] --> 22
+24["AfdTLStartVcSend"] --> 23
+25["AfdTLConnectEventHandler"]:::sh --> 3
+25:::sh --> 26["AfdTLDelayedAcceptCompletion"]
+25:::sh --> 5
+16 --> 0
+16 --> 1
+16 --> 17
+27["AfdAccept"]:::sh --> 28["AfdRestartDelayedAccept"]
+27:::sh --> 29["AfdTLCancelResumeDelayAccept"] 
+26 --> 28
+26 --> 30["AfdRestartDelayedSuperAccept"]
+15 --> 16
+31["AfdTLCompleteBufferUserReceive"] --> 0
+32["AfdTLPostUserReceive"] --> 31
+2 --> 32
+10 --> 2
+10 --> 1
+19 --> 7
+33["AfdBPostDrainReceive"] --> 17
+33 --> 34["AfdTLCompleteBufferReceive"]
+33 --> 10
+35["AfdRestartSuperConnect"] --> 36["AfdRestartBufferSend"]
+37["AfdConnectEventHandler"] --> 3
+37 --> 5
+38["FUN_1c000e1aa"] --> 19
+38 --> 39["AfdDoDatagramConnect"]
+40["AfdSendQueuedTPSend"] --> 24
+40 --> 41["AfdTLBufferedSendComplete"]
+42["AfdConnect"]:::sh --> 38
+43["AfdSuperConnect"]:::sh --> 35
+43:::sh --> 41
+44["AfdTLAbortEventHandler"]:::sh --> 26
+29 --> 26
+1 --> 33
+1 --> 0
+45["AfdCompleteTPackets"] --> 40
+45 --> 46["AfdTPacketsWorker"]
+45 --> 47["AfdStartNextQueuedTransmit"]
+48["FUN_1c0027fa2"] --> 19
+49["FUN_1c0021418"] --> 36
+49 --> 41
+50["AfdFastConnectionSend"] --> 49
+51["AfdBInitDrainBytesInTransport"] --> 1
+52["FUN_1c002246f"] --> 51
+52 --> 53["FUN_1c0004001"]
+54["FUN_1c002ed68"] --> 29
+54 --> 30
+54 --> 54
+54 --> 55["AfdRestartSuperAcceptListen"]
+56["FUN_1c002d729"] --> 37
+57["AfdTLBindComplete2"] --> 48
+58["AfdRestartTPacketsMdlRead"] --> 45
+58 --> 46
+58 --> 59["AfdTPacketsContinueAfterRead"]
+60["AfdTLDgramBindComplete"] --> 57
+61["AfdFastIoDeviceControl"]:::sh --> 50
+62["AfdTLBindComplete"] --> 60
+62 --> 63["FUN_1c0027f76"]
+62 --> 57
+64["AfdTLBind"] --> 62
+65["AfdTLBindSecurityComplete"] --> 64
+65 --> 20
+65 --> 57
+20 --> 65
+20 --> 64
+63 --> 60
+66["AfdBReceive"] --> 52
+66 --> 67["FUN_1c0022408"]
+68["AfdStartListen"]:::sh --> 56
+69["AfdTPacketsMdlRead"] --> 58
+69 --> 59
+30 --> 4
+6 --> 54
+70["AfdFastIoWrite"]:::sh --> 50
+41 --> 36
+71["FUN_1c002ec66"] --> 6
+71 --> 71
+71 --> 72["AfdCloseConnection"]
+46 --> 69
+46 --> 46
+46 --> 73["AfdTPacketsSend"]
+46 --> 74["AfdTPacketsBufferRead"]
+46 --> 75["AfdStartNextTPacketsIrp"]
+76["AfdRestartSuperAcceptGetAddress"] --> 4
+34 --> 10
+4 --> 76
+4 --> 77["AfdRestartSuperAcceptReceive"]
+55 --> 4
+78["AfdReceive"] --> 66
+79["AfdCommonRestartTPacketsSend"] --> 46
+79 --> 73
+80["AfdTLRestartTPacketsSend"] --> 79
+81["AfdTLTPacketsSend"] --> 80
+82["AfdDispatch"] --> 78
+83["DriverEntry"] --> 82
+73 --> 81
+73 --> 84["AfdRestartTPacketsSend"]
+73 --> 75
+85["AfdSanConnectHandler"]:::sh --> 6
+86["FUN_1c00128c9"] --> 6
+87["AfdSuperAccept"]:::sh --> 86
+88["entry"]:::sh --> 83
+59 --> 73
+74 --> 59
+74 --> 89["AfdRestartTPacketsBufferRead"]
+89 --> 59
+89 --> 46
+90["FUN_1c0023892"] --> 51
+90 --> 90
+90 --> 33
+91["AfdGetAddress"]:::sh --> 92["AfdRestartGetAddress"]
+84 --> 79
+75 --> 46
+47 --> 46
+93["AfdCompleteClosePendedTPackets"] --> 47
+11 --> 1
+94["AfdFreeNPConnectionResources"] --> 93
+95["AfdFreeConnectionResources"] --> 94
+96["AfdFreeConnectionEx"] --> 95
+72 --> 96
+97["AfdReturnNicsPackets"]:::sh --> 72
+53 --> 32
+67 --> 33
+39 --> 98["AfdRestartDgConnect"]
+
+```
+
+### Sample MindMap Output for AfdRestartDgConnect
+
+```mermaid
+mindmap
+root((AfdRestartDgConnect))
+      AfdBCommonChainedReceiveEventHandler
+        AfdBChainedReceiveEventHandler
+      AfdTLSendComplete
+      AfdBReceiveEventHandler
+        AfdBReceiveExpeditedEventHandler
+      AfdBReceiveEventHandler
+        AfdTdiSetEventHandlers
+      AfdTLCompleteBufferUserReceive
+        AfdTLPostUserReceive
+      AfdIssueDeviceControl
+      AfdTLDelayedAcceptCompletion
+        AfdCreateConnection
+        AfdTLStartVcSend
+      AfdRestartSuperConnect
+      AfdTLDelayedAcceptCompletion
+      AfdBPostDrainReceive
+        AfdCreateConnection
+      FUN_1c0021418
+        AfdLRRepostReceive
+        AfdTLCancelResumeDelayAccept
+      AfdConnectEventHandler
+        AfdFastConnectionSend
+        FUN_1c002d729
+      FUN_1c002ed68
+        FUN_1c002d729
+      AfdTLBufferedSendComplete
+        FUN_1c0021418
+        AfdServiceSuperAccept
+      AfdContinueSuperAccept
+        AfdServiceSuperAccept
+      AfdTLBufferedSendComplete
+        AfdSendQueuedTPSend
+        AfdTLCancelResumeDelayAccept
+        AfdServiceSuperAccept
+
+
+```
+
 
 ## Installation
 
