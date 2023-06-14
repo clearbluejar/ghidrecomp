@@ -657,7 +657,7 @@ classDef sh fill:#339933
 16 --> 1
 16 --> 17
 27["AfdAccept"]:::sh --> 28["AfdRestartDelayedAccept"]
-27:::sh --> 29["AfdTLCancelResumeDelayAccept"]
+27:::sh --> 29["AfdTLCancelResumeDelayAccept"] 
 26 --> 28
 26 --> 30["AfdRestartDelayedSuperAccept"]
 15 --> 16
