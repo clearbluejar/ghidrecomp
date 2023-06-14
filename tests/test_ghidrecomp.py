@@ -37,7 +37,7 @@ def test_decomplie_ls_cached(shared_datadir: Path):
     all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
 
     assert len(all_funcs) == 532
-    assert len(decompilations) == 532
+    assert len(decompilations) == 0
     assert output_path == expected_output_path
     assert compiler == 'unknown'
     assert lang_id == 'AARCH64:LE:64:v8A'
