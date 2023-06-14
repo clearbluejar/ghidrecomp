@@ -220,7 +220,7 @@ def decompile(args: Namespace):
             start = time()
             with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
                 futures = (executor.submit(decompile_func, func, decompilers, thread_id % thread_count, monitor=monitor)
-                           for thread_id, func in enumerate(all_funcs) if not (output_path / (get_filename(func) + '.c')).exists())
+                           for thread_id, func in enumerate(all_funcs) if args.skip_cache or not (output_path / (get_filename(func) + '.c')).exists())
 
                 for future in concurrent.futures.as_completed(futures):
                     decompilations.append(future.result())
@@ -263,7 +263,7 @@ def decompile(args: Namespace):
 
                 with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
                     futures = (executor.submit(gen_callgraph, func, args.max_display_depth, direction, args.max_time_cg_gen)
-                               for direction in directions for func in all_funcs if get_filename(func) not in callgraphs_completed and re.search(args.callgraph_filter, func.name) is not None)
+                               for direction in directions for func in all_funcs if args.skip_cache or get_filename(func) not in callgraphs_completed and re.search(args.callgraph_filter, func.name) is not None)
 
                     for future in concurrent.futures.as_completed(futures):
 
@@ -276,10 +276,10 @@ def decompile(args: Namespace):
 
                         completed += 1
                         if (completed % 100) == 0:
-                            callgraphs_completed_path.write_text(json.dumps(callgraphs_completed))
                             per_complete = int(completed/len(all_funcs)*100*len(directions))
                             print(f'\nGenerated callgraph {completed} and {per_complete}%\n')
 
+                callgraphs_completed_path.write_text(json.dumps(callgraphs_completed))
                 print(f'Callgraphed {completed} functions for {program.name} in {time() - start}')
                 print(f'Wrote {completed} callgraphs for {program.name} to {callgraph_path} in {time() - start}')
                 print(f'{len(all_funcs) - completed} callgraphs already existed.')
