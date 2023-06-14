@@ -4,8 +4,6 @@
 <img align="center" alt="GitHub Workflow Status (with event)" src="https://img.shields.io/github/actions/workflow/status/clearbluejar/ghidrecomp/pytest-devcontainer.yml?event=push&label=pytest&style=for-the-badge">
 <img align="center" alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/ghidrecomp?color=yellow&label=PyPI%20downloads&style=for-the-badge">
 <img align="center" src="https://img.shields.io/github/stars/clearbluejar/ghidrecomp?style=for-the-badge">
-<a href="https://twitter.com/clearbluejar"><img align="center" src="https://img.shields.io/twitter/follow/clearbluejar?color=blue&style=for-the-badge"></a> 
-<a href="https://infosec.exchange/@clearbluejar"><img align="center" alt="Mastodon Follow" src="https://img.shields.io/mastodon/follow/109396299069714193?color=purple&domain=https%3A%2F%2Finfosec.exchange&label=%40clearbluejar%40infosec.exchange&style=for-the-badge"></a>
 </p>
 
 ## About
