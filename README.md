@@ -67,6 +67,7 @@ The main purpose for this is to use the decomplilations for research and analysi
     - [Decompilation Output Dir](#decompilation-output-dir)
   - [Example usage in Docker container](#example-usage-in-docker-container)
     - [Command (Host)](#command-host)
+    - [Or pull from docker registry](#or-pull-from-docker-registry)
     - [Command (in container)](#command-in-container)
     - [Output](#output-1)
     - [Decompilation Output Dir](#decompilation-output-dir-1)
@@ -356,7 +357,7 @@ void AfdGetRemoteAddress(longlong param_1,undefined8 param_2,char param_3,undefi
 
 ### Command (Host)
 ```bash
-$ docker run --user vscode  --rm -it ghcr.io/clearbluejar/ghidrecomp:latest bash
+$ docker run --rm -it ghcr.io/clearbluejar/ghidrecomp:latest bash
 Unable to find image 'ghcr.io/clearbluejar/ghidrecomp:latest' locally
 latest: Pulling from clearbluejar/ghidrecomp
 32fb02163b6b: Pull complete
@@ -387,10 +388,14 @@ Digest: sha256:4e42285dc1d71c849b7c89fae6598691bdc7d0ee9ec55eb70ce00b5c722fba59
 Status: Downloaded newer image for ghcr.io/clearbluejar/ghidrecomp:latest
 ```
 
+### Or pull from docker registry
+```bash
+docker pull 
+$ docker run --rm -it clearbluejar/ghidrecomp:latest bash
+```
+
 ### Command (in container)
 ```bash
-vscode ➜ / $ pip install ghidrecomp
-vscode ➜ / $ cd /tmp/
 vscode ➜ /tmp $ ghidrecomp /bin/ls
 ```
 
