@@ -8,7 +8,7 @@ on: # rebuild when devcontainer is updated
   workflow_dispatch:  
 
 jobs:
-  build-latest-push-docker:
+  build-pypi-latest-push-docker:
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -26,7 +26,7 @@ jobs:
       - name: Get Version For Tag
         id: get_version
         run: |
-          pip install -e .
+          pip install ghidrecomp
           version=$(ghidrecomp -v)
           echo "ghidrecomp_ver=$version" >> $GITHUB_OUTPUT
           echo $ghidrecomp_ver
