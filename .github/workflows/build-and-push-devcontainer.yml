@@ -63,7 +63,7 @@ jobs:
       - name: Build and push ghidrecomp Docker image         
         uses: docker/build-push-action@v4
         with:
-          context: ./devcontainer
+          context: .devcontainer
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             ${{ github.repository }}
