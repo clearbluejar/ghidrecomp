@@ -10,6 +10,9 @@ on: # rebuild when devcontainer is updated
 jobs:
   build-latest-push-docker:
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
     steps:
 
       - name: Checkout (GitHub)
