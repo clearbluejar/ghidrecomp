@@ -21,15 +21,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
     - name: Test with pytest on devcontainer    
       uses: devcontainers/ci@v0.3
       with:
-        imageName: ghcr.io/clearbluejar/ghidrecomp
-        cacheFrom: ghcr.io/clearbluejar/ghidrecomp
+        imageName: ghcr.io/clearbluejar/ghidra-python
+        cacheFrom: ghcr.io/clearbluejar/ghidra-python
         push: never
         runCmd: |
           pip install --upgrade pip          
