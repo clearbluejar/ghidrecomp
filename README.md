@@ -859,7 +859,16 @@ pip install ghidrecomp
 Avoid installing Ghidra and Java on your host by using a **devcontainer**. 
 
 #### Option 1 - Devcontainer
-Use the [.devcontainer](.devcontainer) in this repo. If you don't know how, follow the detailed instructions here: [ghidra-python-vscode-devcontainer-skeleton quick setup](https://github.com/clearbluejar/ghidra-python-vscode-devcontainer-skeleton#quick-start-setup---dev-container--best-option).
+
+[
+    ![Open ghidrecomp in Remote - Containers](
+        https://img.shields.io/static/v1?label=Remote%20-%20Containers&message=Open&color=blue&logo=visualstudiocode
+    )
+](
+    https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/clearbluejar/ghidrecomp
+)
+
+Use the [.devcontainer](.devcontainer) in this repo. Click the above button if you have VS code installed. If this concept is new to you, check out : [ghidra-python-vscode-devcontainer-skeleton quick setup](https://github.com/clearbluejar/ghidra-python-vscode-devcontainer-skeleton#quick-start-setup---dev-container--best-option) which explains a bit more about dev containers.
 
 #### Option 2 - Docker
 
