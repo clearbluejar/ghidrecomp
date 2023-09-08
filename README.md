@@ -1,7 +1,7 @@
 # Ghidrecomp - Command Line Ghidra Decompiler 
 
-<p align="center">
-<img align="center" alt="GitHub Workflow Status (with event)" src="https://img.shields.io/github/actions/workflow/status/clearbluejar/ghidrecomp/pytest-devcontainer.yml?event=push&label=pytest&style=for-the-badge">
+<p align="center">    
+<img align="center" alt="GitHub Workflow Status (with event)" src="https://img.shields.io/github/actions/workflow/status/clearbluejar/ghidrecomp/pytest-devcontainer.yml?label=pytest&style=for-the-badge">
 <img align="center" alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/ghidrecomp?color=yellow&label=PyPI%20downloads&style=for-the-badge">
 <img align="center" src="https://img.shields.io/github/stars/clearbluejar/ghidrecomp?style=for-the-badge">
 </p>
