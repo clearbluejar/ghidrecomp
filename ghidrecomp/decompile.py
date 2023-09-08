@@ -89,7 +89,13 @@ def decompile_to_single_file(path: Path,
     else:
         monitor = ConsoleTaskMonitor().DUMMY
 
-    decompiler = CppExporter(create_header, create_file, emit_types, exclude_tags, tags)
+    try:
+        # Ghidra CppExporter before 10.3.3 and later        
+        decompiler = CppExporter(None,create_header, create_file, emit_types, exclude_tags, tags)
+    except TypeError:
+        # Ghidra CppExporter before 10.3.3
+        decompiler = CppExporter(create_header, create_file, emit_types, exclude_tags, tags)
+
     decompiler.export(c_file, prog, prog.getMemory(), monitor)
 
 
@@ -200,6 +206,9 @@ def decompile(args: Namespace):
         if skip_count > 0:
             print(f'Skipped {skip_count} functions that failed to match any of {args.filters}')
 
+        decompilations = []
+        callgraphs = []
+
         if args.cppexport:
             print(f"Decompiling {len(all_funcs)} functions using Ghidra's CppExporter")
             c_file = Path(args.output_path) / Path(bin_path.name + '.c')
@@ -211,10 +220,7 @@ def decompile(args: Namespace):
             print(f'Decompiling {len(all_funcs)} functions using {thread_count} threads')
 
             decompilers = setup_decompliers(program, thread_count)
-
             completed = 0
-            decompilations = []
-            callgraphs = []
 
             # Decompile all files
             start = time()
