@@ -3,6 +3,7 @@ import base64
 import zlib
 import json
 import sys
+import re
 
 from typing import TYPE_CHECKING
 from functools import lru_cache
@@ -124,6 +125,10 @@ class CallGraph:
                 count += 1
 
         return count
+    
+    @staticmethod
+    def remove_bad_mermaid_chars(text: str):
+        return re.sub(r'`','',text)
 
     def gen_mermaid_flow_graph(self, direction=None, shaded_nodes: list = None, shade_color='#339933', max_display_depth=None, endpoint_only=False, wrap_mermaid=False) -> str:
         """
@@ -200,7 +205,7 @@ class CallGraph:
                         depth = node[1]
                         fname = node[0]
 
-                        if max_display_depth and depth > max_display_depth:
+                        if max_display_depth is not None and depth > max_display_depth:
                             continue
 
                         if shaded_nodes and fname in shaded_nodes:
@@ -238,6 +243,8 @@ class CallGraph:
 
         mermaid_chart = mermaid_flow.format(links='\n'.join(links.keys()), direction=direction, style=style)
 
+        mermaid_chart = self.remove_bad_mermaid_chars(mermaid_chart)
+
         if wrap_mermaid:
             mermaid_chart = _wrap_mermaid(mermaid_chart)
 
@@ -266,7 +273,7 @@ class CallGraph:
             depth = row[1]
 
             # skip root row
-            if depth < 2 or max_display_depth and depth > max_display_depth:
+            if depth < 2 or max_display_depth is not None and depth > max_display_depth:
                 continue
 
             if depth < last_depth:
@@ -280,6 +287,8 @@ class CallGraph:
                 current_level_names.append(row[0])
 
         mermaid_chart = mermaid_mind.format(rows='\n'.join(rows), root=self.root)
+
+        mermaid_chart = self.remove_bad_mermaid_chars(mermaid_chart)
 
         if wrap_mermaid:
             mermaid_chart = _wrap_mermaid(mermaid_chart)
@@ -298,7 +307,7 @@ def get_called_funcs_memo(f: "ghidra.program.model.listing.Function"):
 
 
 # Recursively calling to build calling graph
-def get_calling(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = CallGraph(), depth: int = 0, visited: tuple = None, verbose=False, include_ns=True, start_time=None, max_run_time=None):
+def get_calling(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = CallGraph(), depth: int = 0, visited: tuple = None, verbose=False, include_ns=True, start_time=None, max_run_time=None, max_depth=MAX_DEPTH):
     """
     Build a call graph of all calling functions
     Traverses depth first
@@ -314,12 +323,15 @@ def get_calling(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = 
         visited = tuple()
         start_time = time.time()
 
-    if depth > MAX_DEPTH:
+    if depth == MAX_DEPTH:
         cgraph.add_edge(f.getName(include_ns), f'MAX_DEPTH_HIT - {depth}', depth)
         return cgraph
 
     if (time.time() - start_time) > float(max_run_time):
-        raise TimeoutError(f'time expired for {f.getName(include_ns)}')
+        #raise TimeoutError(f'time expired for {clean_func(f,include_ns)}')
+        cgraph.add_edge(f.getName(include_ns), f'MAX_TIME_HIT - time: {max_run_time} depth: {depth}', depth)
+        print(f'\nWarn: cg : {cgraph.root} edges: {cgraph.links_count()} depth: {depth} name: {f.name} did not complete. max_run_time: {max_run_time} Increase timeout with --max-time-cg-gen MAX_TIME_CG_GEN')
+        return cgraph
 
     space = (depth+2)*'  '
 
@@ -349,7 +361,7 @@ def get_calling(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = 
             cgraph.add_edge(c.getName(include_ns), f.getName(include_ns), depth)
 
             # Parse further functions
-            cgraph = get_calling(c, cgraph, depth, visited=visited, start_time=start_time, max_run_time=max_run_time)
+            cgraph = get_calling(c, cgraph, depth, visited=visited, start_time=start_time, max_run_time=max_run_time, max_depth=max_depth)
     else:
         if verbose:
             print(f'{space} - END for {f.name}')
@@ -380,13 +392,15 @@ def get_called(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = C
         visited = tuple()
         start_time = time.time()
 
-    if depth > max_depth:
+    if depth == max_depth:
         cgraph.add_edge(f.getName(include_ns), f'MAX_DEPTH_HIT - {depth}', depth)
         return cgraph
 
     if (time.time() - start_time) > float(max_run_time):
-        raise TimeoutError(f'time expired for {f.getName(include_ns)}')
-
+        cgraph.add_edge(f.getName(include_ns), f'MAX_TIME_HIT - time: {max_run_time} depth: {depth}', depth)
+        print(f'\nWarn: cg : {cgraph.root} edges: {cgraph.links_count()} depth: {depth} name: {f.name} did not complete. max_run_time: {max_run_time} Increase timeout with --max-time-cg-gen MAX_TIME_CG_GEN')
+        return cgraph
+        
     space = (depth+2)*'  '
 
     # loop check
@@ -427,7 +441,7 @@ def get_called(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = C
 
                     # Parse further functions
                     cgraph = get_called(c, cgraph, depth, visited=visited,
-                                        start_time=start_time, max_run_time=max_run_time)
+                                        start_time=start_time, max_run_time=max_run_time, max_depth=max_depth)
 
     else:
         if verbose:
