@@ -18,16 +18,16 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.11"]
-        runner: [ ubuntu-latest, windows-latest, macos-latest]
+        runner: [ ubuntu-latest ]
 
     steps:
     - uses: actions/checkout@v3
     - name: Test with pytest on devcontainer    
       uses: devcontainers/ci@v0.3
       with:
-        imageName: ghcr.io/clearbluejar/ghidra-python
         cacheFrom: ghcr.io/clearbluejar/ghidra-python
         push: never
+        platform: linux/amd64,linux/arm64
         runCmd: |
           pip install --upgrade pip          
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
