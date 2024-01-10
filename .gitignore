@@ -129,6 +129,4 @@ dmypy.json
 .pyre/
 
 # project specific ignores
-.ghidra_projects*/
-decompilations*/
-.symbols*/
+ghidrecomps*/

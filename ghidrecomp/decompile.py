@@ -130,11 +130,25 @@ def decompile(args: Namespace):
     print(f'Starting decompliations: {args}')
 
     bin_path = Path(args.bin)
-    project_location = Path(args.project_path)
     thread_count = args.thread_count
 
-    output_path = Path(args.output_path) / bin_path.name
+    output_path = Path(args.output_path)
+    bin_output_path = output_path  / bin_path.name
+    decomp_path = bin_output_path / 'decomps'
     output_path.mkdir(exist_ok=True, parents=True)
+    bin_output_path.mkdir(exist_ok=True, parents=True)
+    decomp_path.mkdir(exist_ok=True, parents=True)
+    
+
+    if args.project_path == 'ghidra_projects':
+        project_location = output_path / args.project_path
+    else:
+        project_location = Path(args.project_path)
+
+    if args.symbols_path == 'symbols':
+        symbols_path = output_path / args.symbols_path
+    else:
+        symbols_path = Path(args.symbols_path)
 
     # turn on verbose
     launcher = HeadlessPyhidraLauncher(True)
@@ -159,7 +173,7 @@ def decompile(args: Namespace):
             if args.sym_file_path:
                 set_pdb(program, args.sym_file_path)
             else:
-                setup_symbol_server(args.symbols_path)
+                setup_symbol_server(symbols_path)
 
                 set_remote_pdbs(program, True)
 
@@ -206,7 +220,7 @@ def decompile(args: Namespace):
 
         if args.cppexport:
             print(f"Decompiling {len(all_funcs)} functions using Ghidra's CppExporter")
-            c_file = Path(args.output_path) / Path(bin_path.name + '.c')
+            c_file = decomp_path / Path(bin_path.name + '.c')
             start = time()
             decompile_to_single_file(c_file, program)
             print(f'Decompiled {len(all_funcs)} functions for {program.name} in {time() - start}')
@@ -221,7 +235,7 @@ def decompile(args: Namespace):
             start = time()
             with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
                 futures = (executor.submit(decompile_func, func, decompilers, thread_id % thread_count, monitor=monitor)
-                           for thread_id, func in enumerate(all_funcs) if args.skip_cache or not (output_path / (get_filename(func) + '.c')).exists())
+                           for thread_id, func in enumerate(all_funcs) if args.skip_cache or not (decomp_path / (get_filename(func) + '.c')).exists())
 
                 for future in concurrent.futures.as_completed(futures):
                     decompilations.append(future.result())
@@ -235,20 +249,20 @@ def decompile(args: Namespace):
             # Save all decomps
             start = time()
             with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
-                futures = (executor.submit((output_path / (name + '.c')).write_text, decomp)
+                futures = (executor.submit((decomp_path / (name + '.c')).write_text, decomp)
                            for name, decomp, sig in decompilations)
 
                 for future in concurrent.futures.as_completed(futures):
                     pass
 
-            print(f'Wrote {completed} decompilations for {program.name} to {output_path} in {time() - start}')
+            print(f'Wrote {completed} decompilations for {program.name} to {decomp_path} in {time() - start}')
 
             # Generate callgrpahs for functions
             if args.callgraphs:
 
                 start = time()
                 completed = 0
-                callgraph_path = output_path / 'callgraphs'
+                callgraph_path = bin_output_path / 'callgraphs'
                 callgraphs_completed_path = callgraph_path / 'completed_callgraphs.json'
                 if callgraphs_completed_path.exists():
                     callgraphs_completed = json.loads(callgraphs_completed_path.read_text())
@@ -289,4 +303,4 @@ def decompile(args: Namespace):
                 print(f'Wrote {completed} callgraphs for {program.name} to {callgraph_path} in {time() - start}')
                 print(f'{len(all_funcs) - completed} callgraphs already existed.')
 
-        return (all_funcs, decompilations, output_path, str(program.compiler), str(program.languageID), callgraphs)
+        return (all_funcs, decompilations, bin_output_path, str(program.compiler), str(program.languageID), callgraphs)
