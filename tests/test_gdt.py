@@ -82,10 +82,18 @@ def test_apply_gdt(shared_datadir: Path):
 
     args = parser.parse_args([f"{bin_path.absolute()}"])
 
-    project_location = Path(args.project_path)
-    output_path = Path(args.output_path) / bin_path.name
-    output_path.mkdir(exist_ok=True, parents=True)
+    output_path = Path(args.output_path)
 
+    if args.project_path == 'ghidra_projects':
+        project_location = output_path / args.project_path
+    else:
+        project_location = Path(args.project_path)
+
+    if args.symbols_path == 'symbols':
+        symbols_path = output_path / args.symbols_path
+    else:
+        symbols_path = Path(args.symbols_path)
+   
     # turn on verbose
     pyhidra.start(True)
 
@@ -98,7 +106,7 @@ def test_apply_gdt(shared_datadir: Path):
 
         program: "Program" = flat_api.getCurrentProgram()
 
-        setup_symbol_server(args.symbols_path)
+        setup_symbol_server(symbols_path)
 
         set_remote_pdbs(program, True)
 
