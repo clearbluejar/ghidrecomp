@@ -13,5 +13,5 @@ if uname -a | grep -q 'aarch64'; then
     $GHIDRA_INSTALL_DIR/support/buildNatives
 fi
 
-# install local workspace
-pip install -e .
+# install local workspace and test requirements
+pip install -e ".[testing]"
