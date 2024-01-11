@@ -4,18 +4,32 @@ import zlib
 import json
 import sys
 import re
+import argparse
 
 from typing import TYPE_CHECKING
 from functools import lru_cache
 
 # don't really limit the graph
 MAX_DEPTH = sys.getrecursionlimit() - 1
-
+MAX_PATH_LEN = 50
 
 # needed for ghidra python vscode autocomplete
 if TYPE_CHECKING:
     import ghidra
     from ghidra_builtins import *
+
+
+def add_cg_args_to_parser(parser: argparse.ArgumentParser):
+
+    group = parser.add_argument_group('Callgraph Options')
+    group.add_argument('--callgraphs',  help='Generate callgraph markdown', action='store_true')
+    group.add_argument('--callgraph-filter',
+                       help='Only generate callgraphs for functions matching filter', default='.')
+    group.add_argument('--mdd', '--max-display-depth', help='Max Depth for graph generation', dest='max_display_depth')
+    group.add_argument('--max-time-cg-gen', help='Max time in seconds to wait for callgraph gen.', default=5)
+    group.add_argument('--cg-direction', help='Direction for callgraph.',
+                       choices=['calling', 'called', 'both'], default='calling')
+
 
 
 class CallGraph:
@@ -525,3 +539,31 @@ A condensed view, showing only endpoints of the callgraph.
 '''
 
     return md_template
+
+
+def gen_callgraph(func: 'ghidra.program.model.listing.Function', max_display_depth=None, direction='calling', max_run_time=None, name=None):
+
+    if name is None:
+        name = f'{func.getName()[:MAX_PATH_LEN]}-{func.entryPoint}'    
+    
+    # print(f'Generating {direction} callgraph for : {name}')
+    flow = ''
+    callgraph = None
+
+    if direction == 'calling':
+        callgraph = get_calling(func, max_run_time=max_run_time)
+    elif direction == 'called':
+        callgraph = get_called(func, max_run_time=max_run_time)
+    else:
+        raise Exception(f'Unsupported callgraph direction {direction}')
+
+    if callgraph is not None:
+        flow = callgraph.gen_mermaid_flow_graph(
+            shaded_nodes=callgraph.get_endpoints(),
+            max_display_depth=max_display_depth,
+            wrap_mermaid=True)
+        flow_ends = callgraph.gen_mermaid_flow_graph(
+            shaded_nodes=callgraph.get_endpoints(), endpoint_only=True, wrap_mermaid=True)
+        mind = callgraph.gen_mermaid_mind_map(max_display_depth=3, wrap_mermaid=True)
+
+    return [name, direction, callgraph, [['flow', flow], ['flow_ends', flow_ends], ['mind', mind]]]

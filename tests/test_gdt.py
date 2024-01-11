@@ -4,8 +4,9 @@ from typing import Union, TYPE_CHECKING, Tuple, ContextManager, List
 
 import pyhidra
 from pyhidra.core import _setup_project, _analyze_program
-from ghidrecomp.utility import apply_gdt, get_parser, setup_symbol_server, set_remote_pdbs
+from ghidrecomp.utility import apply_gdt, setup_symbol_server, set_remote_pdbs
 from ghidrecomp.decompile import analyze_program
+from ghidrecomp.parser import get_parser
 
 if TYPE_CHECKING:
     from ghidra.program.flatapi import FlatProgramAPI

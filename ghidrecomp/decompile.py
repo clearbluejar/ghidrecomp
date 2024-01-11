@@ -8,7 +8,7 @@ import json
 from pyhidra import HeadlessPyhidraLauncher, open_program
 
 from .utility import set_pdb, setup_symbol_server, set_remote_pdbs, analyze_program, get_pdb, apply_gdt
-from .callgraph import get_called, get_calling, CallGraph
+from .callgraph import get_called, get_calling, CallGraph, gen_callgraph
 
 # needed for ghidra python vscode autocomplete
 if TYPE_CHECKING:
@@ -98,31 +98,6 @@ def decompile_to_single_file(path: Path,
 
     decompiler.export(c_file, prog, prog.getMemory(), monitor)
 
-
-def gen_callgraph(func: 'ghidra.program.model.listing.Function', max_display_depth=None, direction='calling', max_run_time=None):
-
-    name = get_filename(func)
-    # print(f'Generating {direction} callgraph for : {name}')
-    flow = ''
-    callgraph = None
-
-    if direction == 'calling':
-        callgraph = get_calling(func, max_run_time=max_run_time)
-    elif direction == 'called':
-        callgraph = get_called(func, max_run_time=max_run_time)
-    else:
-        raise Exception(f'Unsupported callgraph direction {direction}')
-
-    if callgraph is not None:
-        flow = callgraph.gen_mermaid_flow_graph(
-            shaded_nodes=callgraph.get_endpoints(),
-            max_display_depth=max_display_depth,
-            wrap_mermaid=True)
-        flow_ends = callgraph.gen_mermaid_flow_graph(
-            shaded_nodes=callgraph.get_endpoints(), endpoint_only=True, wrap_mermaid=True)
-        mind = callgraph.gen_mermaid_mind_map(max_display_depth=3, wrap_mermaid=True)
-
-    return [name, direction, callgraph, [['flow', flow], ['flow_ends', flow_ends], ['mind', mind]]]
 
 
 def decompile(args: Namespace):
@@ -281,7 +256,7 @@ def decompile(args: Namespace):
                     max_display_depth = int(args.max_display_depth)
                     
                 with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
-                    futures = (executor.submit(gen_callgraph, func, max_display_depth, direction, args.max_time_cg_gen)
+                    futures = (executor.submit(gen_callgraph, func, max_display_depth, direction, args.max_time_cg_gen, get_filename(func))
                                for direction in directions for func in all_funcs if args.skip_cache or get_filename(func) not in callgraphs_completed and re.search(args.callgraph_filter, func.name) is not None)
 
                     for future in concurrent.futures.as_completed(futures):
