@@ -9,6 +9,7 @@ from pyhidra import HeadlessPyhidraLauncher, open_program
 
 from .utility import set_pdb, setup_symbol_server, set_remote_pdbs, analyze_program, get_pdb, apply_gdt
 from .callgraph import get_called, get_calling, CallGraph, gen_callgraph
+from .bsim import gen_bsim_sigs_for_program
 
 # needed for ghidra python vscode autocomplete
 if TYPE_CHECKING:
@@ -124,6 +125,12 @@ def decompile(args: Namespace):
         symbols_path = output_path / args.symbols_path
     else:
         symbols_path = Path(args.symbols_path)
+
+    if args.bsim_sig_path == 'bsim_xmls':
+        bsim_sig_path = output_path / args.bsim_sig_path
+    else:
+        bsim_sig_path = output_path / Path(args.bsim_sig_path)
+
 
     # turn on verbose
     launcher = HeadlessPyhidraLauncher(True)
@@ -278,4 +285,16 @@ def decompile(args: Namespace):
                 print(f'Wrote {completed} callgraphs for {program.name} to {callgraph_path} in {time() - start}')
                 print(f'{len(all_funcs) - completed} callgraphs already existed.')
 
+
+        # BSim
+        gensig = None
+        manager = None
+        if args.bsim:
+            start = time()
+            print(f'Generating BSim sigs for {len(all_funcs)} functions for {program.name}')
+            sig_name, gensig, manager = gen_bsim_sigs_for_program(program,bsim_sig_path,args.bsim_template,all_funcs)
+            print(f'Generated BSim sigs for {manager.numFunctions()} functions in {time() - start}')
+            print(f'Sigs are in {bsim_sig_path / sig_name}')
+                   
+        
         return (all_funcs, decompilations, bin_output_path, str(program.compiler), str(program.languageID), callgraphs)
