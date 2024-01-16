@@ -17,13 +17,31 @@ a(filename ) --> b[ghidrecomp]
 a2[(Symbol Server)] --> b
 
 b --> e(Ghidra Project Files)
-b --> decompilations 
+b --> output
 
-subgraph decompilations
-    direction LR
-    i(func1.c)
-    h(func2.c)
-    f(func3.c)
+subgraph output
+
+  subgraph decompilations
+      direction LR
+      i(func1.c)
+      h(func2.c)
+      f(funcB.c)
+  end
+
+  subgraph callgraphs
+      direction LR
+      j(callgraph1.md)
+      k(callgraph2.md)
+      l(callgraphN.md)
+  end
+
+  subgraph bsim-xml
+      direction LR
+      n(sig-md5-bin1.xml)
+      m(sig-md5-bin2.xml)
+      o(sig-md5-binN.xml)
+  end
+
 end
 
 ```
@@ -67,15 +85,18 @@ The main purpose for this is to use the decomplilations for research and analysi
     - [Decompilation Output Dir](#decompilation-output-dir)
   - [Example usage in Docker container](#example-usage-in-docker-container)
     - [Command (Host)](#command-host)
-    - [Or pull from docker registry](#or-pull-from-docker-registry)
-    - [Command (in container)](#command-in-container)
-    - [Output](#output-1)
+    - [Run in docker on /bin/ls](#run-in-docker-on-binls)
+      - [Output](#output-1)
     - [Decompilation Output Dir](#decompilation-output-dir-1)
   - [Example Usage with Windows afd.sys Callgraph:](#example-usage-with-windows-afdsys-callgraph)
     - [Command line](#command-line-1)
     - [Output](#output-2)
     - [Sample Calling Callgraph Output AfdRestartDgConnect:](#sample-calling-callgraph-output-afdrestartdgconnect)
     - [Sample MindMap Output for AfdRestartDgConnect](#sample-mindmap-output-for-afdrestartdgconnect)
+  - [Example BSim signature generation](#example-bsim-signature-generation)
+    - [Command line](#command-line-2)
+    - [Output](#output-3)
+    - [Files generated](#files-generated)
   - [Installation](#installation)
     - [Windows](#windows)
     - [Linux / Mac](#linux--mac)
@@ -104,9 +125,11 @@ The main purpose for this is to use the decomplilations for research and analysi
 ## Usage
 
 ```
-usage: ghidrecomp [-h] [--cppexport] [--filter FILTERS] [--project-path PROJECT_PATH] [--gdt [GDT]] [-o OUTPUT_PATH] [-v] [--skip-cache] [--sym-file-path SYM_FILE_PATH | -s SYMBOLS_PATH | --skip-symbols]
-                  [-t THREAD_COUNT] [--va] [--fa] [--max-ram-percent MAX_RAM_PERCENT] [--print-flags] [--callgraphs] [--callgraph-filter CALLGRAPH_FILTER] [--mdd MAX_DISPLAY_DEPTH] [--max-time-cg-gen MAX_TIME_CG_GEN]
-                  [--cg-direction {calling,called,both}]
+usage: ghidrecomp [-h] [--cppexport] [--filter FILTERS] [--project-path PROJECT_PATH] [--gdt [GDT]] [-o OUTPUT_PATH] [-v] [--skip-cache]
+                  [--sym-file-path SYM_FILE_PATH | -s SYMBOLS_PATH | --skip-symbols] [-t THREAD_COUNT] [--va] [--fa]
+                  [--max-ram-percent MAX_RAM_PERCENT] [--print-flags] [--callgraphs] [--callgraph-filter CALLGRAPH_FILTER] [--mdd MAX_DISPLAY_DEPTH]
+                  [--max-time-cg-gen MAX_TIME_CG_GEN] [--cg-direction {calling,called,both}] [--bsim] [--bsim-sig-path BSIM_SIG_PATH]
+                  [--bsim-template BSIM_TEMPLATE] [--bsim-cat BSIM_CAT]
                   bin
 
 ghidrecomp - A Command Line Ghidra Decompiler
@@ -119,19 +142,19 @@ options:
   --cppexport           Use Ghidras CppExporter to decompile to single file (default: False)
   --filter FILTERS      Regex match for function name (default: None)
   --project-path PROJECT_PATH
-                        Path to base ghidra projects (default: .ghidra_projects)
+                        Path to base ghidra projects (default: ghidra_projects)
   --gdt [GDT]           Additional GDT to apply (default: None)
   -o OUTPUT_PATH, --output-path OUTPUT_PATH
-                        Location for all decompilations (default: decompilations)
+                        Location for all decompilations (default: ghidrecomps)
   -v, --version         show program's version number and exit
   --skip-cache          Skip cached and genearate new decomp and callgraphs. (default: False)
   --sym-file-path SYM_FILE_PATH
                         Specify single pdb symbol file for bin (default: None)
   -s SYMBOLS_PATH, --symbols-path SYMBOLS_PATH
-                        Path for local symbols directory (default: .symbols)
+                        Path for local symbols directory (default: symbols)
   --skip-symbols        Do not apply symbols (default: False)
   -t THREAD_COUNT, --thread-count THREAD_COUNT
-                        Threads to use for processing. Defaults to cpu count (default: 8)
+                        Threads to use for processing. Defaults to cpu count (default: 12)
   --va                  Enable verbose analysis (default: False)
   --fa                  Force new analysis (even if already analyzed) (default: False)
 
@@ -150,6 +173,14 @@ Callgraph Options:
                         Max time in seconds to wait for callgraph gen. (default: 5)
   --cg-direction {calling,called,both}
                         Direction for callgraph. (default: calling)
+
+BSim Options:
+  --bsim                Generate BSim function feature vector signatures (default: False)
+  --bsim-sig-path BSIM_SIG_PATH
+                        Path to store BSim xml sigs (default: bsim-xmls)
+  --bsim-template BSIM_TEMPLATE
+                        BSim database template (default: medium_nosize)
+  --bsim-cat BSIM_CAT   BSim category. (type:value) --bsim-cat color:red (default: None)
 ```
 
 
@@ -252,8 +283,8 @@ Wrote 1275 decompilations for afd.sys.10.0.22621.1344 to decompilations/afd.sys.
 
 ### Decompilation Output Dir
 ```bash
-$ tree decompilations | more
-decompilations
+$ tree ghidrecomps | more
+ghidrecomps/
 └── afd.sys
     ├── AFDETW_TRACEDATA_INDICATION-1c0008d00.c
     ├── AFDETW_TRACEDISCONNECT-1c000f884.c
@@ -357,132 +388,139 @@ void AfdGetRemoteAddress(longlong param_1,undefined8 param_2,char param_3,undefi
 
 ### Command (Host)
 ```bash
-$ docker run --rm -it ghcr.io/clearbluejar/ghidrecomp:latest bash
+% mkdir ghidrecomps
+% docker run --rm -it  -v $(pwd)/ghidrecomps:/ghidrecomps ghcr.io/clearbluejar/ghidrecomp:latest
 Unable to find image 'ghcr.io/clearbluejar/ghidrecomp:latest' locally
 latest: Pulling from clearbluejar/ghidrecomp
-32fb02163b6b: Pull complete
-167c7feebee8: Pull complete
-d6dfff1f6f3d: Pull complete
-e9cdcd4942eb: Pull complete
-ca3bce705f6c: Pull complete
-5e1c6c4f8bbf: Pull complete
-e7e563b10921: Pull complete
-9eb9d866c104: Pull complete
-8ca602e7301a: Pull complete
-124a51dde68b: Pull complete
-c04919d34655: Pull complete
-a2570739af5d: Pull complete
-e57c67fabbc5: Pull complete
-8da6a860f9e3: Pull complete
-ca6008c09918: Pull complete
-702a3b20cdb3: Pull complete
-bd0b7bd152dc: Pull complete
-7299f2e2483b: Pull complete
+df2021ddb7d6: Already exists
+8d647f1dd7e7: Already exists
+5cdd9a70365f: Already exists
+95089c600b36: Already exists
+031bfcddba4a: Already exists
+3e388e9ee67f: Already exists
+c8dd6e41498c: Already exists
+6997e1686b99: Already exists
+ee33bc143a6a: Already exists
+5be89ff28daf: Already exists
+ba22b50e2816: Already exists
+a10ea6edf9a9: Already exists
+01795477b75e: Already exists
+85b3b893a1c1: Already exists
+53738c41768c: Already exists
+bd57d1a46c3c: Already exists
+117d78b0cfb7: Already exists
+15235f090f28: Already exists
 4f4fb700ef54: Pull complete
-7cbbb1896fad: Pull complete
-1f309d93fb79: Pull complete
-d11b50be43c4: Pull complete
-7c66f674c44d: Pull complete
-8497280f5c51: Pull complete
-Digest: sha256:4e42285dc1d71c849b7c89fae6598691bdc7d0ee9ec55eb70ce00b5c722fba59
+13c463db881b: Pull complete
+dac212319919: Pull complete
+6855adc3f8b8: Pull complete
+96069363e29e: Pull complete
+b7f172785aba: Pull complete
+05aed184d971: Pull complete
+611f58da3b2c: Pull complete
+Digest: sha256:1e7d47267b7a0a31805822c11f891cd502485a42c88bb0ad6292a34e930c6108
 Status: Downloaded newer image for ghcr.io/clearbluejar/ghidrecomp:latest
+usage: ghidrecomp [-h] [--cppexport] [--filter FILTERS] [--project-path PROJECT_PATH] [--gdt [GDT]] [-o OUTPUT_PATH] [-v] [--skip-cache]
+                  [--sym-file-path SYM_FILE_PATH | -s SYMBOLS_PATH | --skip-symbols] [-t THREAD_COUNT] [--va] [--fa] [--max-ram-percent MAX_RAM_PERCENT] [--print-flags]
+                  [--callgraphs] [--callgraph-filter CALLGRAPH_FILTER] [--mdd MAX_DISPLAY_DEPTH] [--max-time-cg-gen MAX_TIME_CG_GEN]
+                  [--cg-direction {calling,called,both}]
+                  bin
+ghidrecomp: error: the following arguments are required: bin
 ```
 
-### Or pull from docker registry
+### Run in docker on /bin/ls
 ```bash
-docker pull 
-$ docker run --rm -it clearbluejar/ghidrecomp:latest bash
+$ docker run --rm -it -v $(pwd)/ghidrecomps:/ghidrecomps ghcr.io/clearbluejar/ghidrecomp:latest /bin/ls
 ```
 
-### Command (in container)
+#### Output
 ```bash
-vscode ➜ /tmp $ ghidrecomp /bin/ls
-```
-
-### Output
-```bash
-Starting decompliations: Namespace(bin='/bin/ls', cppexport=False, filters=None, project_path='.ghidra_projects', output_path='decompilations', sym_file_path=None, symbols_path='.symbols', skip_symbols=False, thread_count=12, va=False)
+Starting decompliations: Namespace(bin='/bin/ls', cppexport=False, filters=None, project_path='.ghidra_projects', gdt=None, output_path='decompilations', skip_cache=False, sym_file_path=None, symbols_path='.symbols', skip_symbols=False, thread_count=12, va=False, fa=False, max_ram_percent=50.0, print_flags=False, callgraphs=False, callgraph_filter='.', max_display_depth=None, max_time_cg_gen=5, cg_direction='calling')
 INFO  Using log config file: jar:file:/ghidra/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)
-INFO  Using log file: /home/vscode/.ghidra/.ghidra_10.2.3_PUBLIC/application.log (LoggingInitialization)
-INFO  Loading user preferences: /home/vscode/.ghidra/.ghidra_10.2.3_PUBLIC/preferences (Preferences)
-INFO  Class search complete (898 ms) (ClassSearcher)
+INFO  Using log file: /home/vscode/.ghidra/.ghidra_11.0_PUBLIC/application.log (LoggingInitialization)
+INFO  Loading user preferences: /home/vscode/.ghidra/.ghidra_11.0_PUBLIC/preferences (Preferences)
+INFO  Searching for classes... (ClassSearcher)
+INFO  Class search complete (566 ms) (ClassSearcher)
 INFO  Initializing SSL Context (SSLContextInitializer)
 INFO  Initializing Random Number Generator... (SecureRandomFactory)
 INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)
 INFO  Trust manager disabled, cacerts have not been set (ApplicationTrustManagerFactory)
-INFO  Creating project: /tmp/.ghidra_projects/ls/ls (DefaultProject)
+INFO  Creating project: /home/vscode/.ghidra_projects/ls/ls (DefaultProject)
 INFO  Starting cache cleanup: /tmp/vscode-Ghidra/fscache2 (FileCacheMaintenanceDaemon)
 INFO  Finished cache cleanup, estimated storage used: 0 (FileCacheMaintenanceDaemon)
 INFO  Using Loader: Executable and Linking Format (ELF) (AutoImporter)
+INFO  Using Language/Compiler: AARCH64:LE:64:v8A:default (AutoImporter)
 Setting up Symbol Server for symbols...
 path: .symbols level: 1
 Loaded well known /ghidra/Ghidra/Configurations/Public_Release/data/PDB_SYMBOL_SERVER_URLS.pdburl' length: 883'
 Symbol Server Configured path: SymbolServerService:
-        symbolStore: LocalSymbolStore: [ rootDir: /tmp/.symbols, storageLevel: -1],
-        symbolServers:
-                HttpSymbolServer: [ url: https://msdl.microsoft.com/download/symbols/, storageLevel: -1]
-                HttpSymbolServer: [ url: https://chromium-browser-symsrv.commondatastorage.googleapis.com/, storageLevel: -1]
-                HttpSymbolServer: [ url: https://symbols.mozilla.org/, storageLevel: -1]
-                HttpSymbolServer: [ url: https://software.intel.com/sites/downloads/symbols/, storageLevel: -1]
-                HttpSymbolServer: [ url: https://driver-symbols.nvidia.com/, storageLevel: -1]
-                HttpSymbolServer: [ url: https://download.amd.com/dir/bin/, storageLevel: -1]
-Analyzing program ls
-INFO  DWARF external debug information found: ExternalDebugInfo [filename=61a544c35b9dc1d172d1a1c09043e487326966.debug, crc=d165fd8a, hash=6461a544c35b9dc1d172d1a1c09043e487326966] (ExternalDebugFilesService)
+	symbolStore: LocalSymbolStore: [ rootDir: /home/vscode/.symbols, storageLevel: -1],
+	symbolServers:
+		HttpSymbolServer: [ url: https://msdl.microsoft.com/download/symbols/, storageLevel: -1]
+		HttpSymbolServer: [ url: https://chromium-browser-symsrv.commondatastorage.googleapis.com/, storageLevel: -1]
+		HttpSymbolServer: [ url: https://symbols.mozilla.org/, storageLevel: -1]
+		HttpSymbolServer: [ url: https://software.intel.com/sites/downloads/symbols/, storageLevel: -1]
+		HttpSymbolServer: [ url: https://driver-symbols.nvidia.com/, storageLevel: -1]
+		HttpSymbolServer: [ url: https://download.amd.com/dir/bin/, storageLevel: -1]
+Failed to find pdb for ls - .ProgramDB
+Analyzing program ls...
+Running analyzers...
+INFO  DWARF external debug information found: ExternalDebugInfo [filename=127c37a4c459cf01639f6ded2fcf11a49d3da9.debug, crc=2d1e7054, hash=9f127c37a4c459cf01639f6ded2fcf11a49d3da9] (ExternalDebugFilesService)
 INFO  Unable to find DWARF information, skipping DWARF analysis (DWARFAnalyzer)
-INFO  hit non-returning function, restarting decompiler switch analyzer later (DecompilerSwitchAnalyzer)
 INFO  Packed database cache: /tmp/vscode-Ghidra/packed-db-cache (PackedDatabaseCache)
+INFO  Applied data type archive: generic_clib_64 (ApplyDataArchiveAnalyzer)
 INFO  -----------------------------------------------------
-    ASCII Strings                              0.565 secs
-    Apply Data Archives                        0.462 secs
-    Call Convention ID                         0.013 secs
-    Call-Fixup Installer                       0.009 secs
-    Create Address Tables                      0.077 secs
-    Create Address Tables - One Time           0.025 secs
-    Create Function                            0.036 secs
-    DWARF                                      0.011 secs
-    Data Reference                             0.054 secs
-    Decompiler Switch Analysis                 0.136 secs
-    Decompiler Switch Analysis - One Time      2.743 secs
-    Demangler GNU                              0.044 secs
-    Disassemble Entry Points                   1.104 secs
-    ELF Scalar Operand References              0.285 secs
-    Embedded Media                             0.011 secs
+    AARCH64 ELF PLT Thunks                     0.063 secs
+    ASCII Strings                              0.139 secs
+    Apply Data Archives                        0.575 secs
+    Basic Constant Reference Analyzer          0.867 secs
+    Call Convention ID                         0.004 secs
+    Call-Fixup Installer                       0.005 secs
+    Create Address Tables                      0.022 secs
+    Create Address Tables - One Time           0.012 secs
+    Create Function                            0.000 secs
+    DWARF                                      0.007 secs
+    Data Reference                             0.022 secs
+    Decompiler Switch Analysis                 0.982 secs
+    Demangler GNU                              0.027 secs
+    Disassemble                                0.008 secs
+    Disassemble Entry Points                   0.521 secs
+    Embedded Media                             0.008 secs
     External Entry References                  0.000 secs
-    Function ID                                0.225 secs
-    Function Start Search                      0.033 secs
-    Function Start Search After Code           0.012 secs
-    Function Start Search After Data           0.012 secs
-    GCC Exception Handlers                     0.319 secs
-    Non-Returning Functions - Discovered       0.189 secs
-    Non-Returning Functions - Known            0.005 secs
-    Reference                                  0.129 secs
-    Shared Return Calls                        0.092 secs
-    Stack                                      1.734 secs
-    Subroutine References                      0.048 secs
-    Subroutine References - One Time           0.000 secs
-    x86 Constant Reference Analyzer            2.017 secs
+    Function Start Search                      0.017 secs
+    Function Start Search After Code           0.009 secs
+    Function Start Search After Data           0.010 secs
+    Function Start Search delayed - One Time   0.003 secs
+    GCC Exception Handlers                     0.196 secs
+    Non-Returning Functions - Discovered       0.024 secs
+    Non-Returning Functions - Known            0.003 secs
+    Reference                                  0.064 secs
+    Shared Return Calls                        0.035 secs
+    Stack                                      0.984 secs
+    Subroutine References                      0.023 secs
 -----------------------------------------------------
-     Total Time   10 secs
+     Total Time   4 secs
 -----------------------------------------------------
  (AutoAnalysisManager)
-Skipped 0 functions that failed to match any of None
-Decompiling 520 functions using 12 threads
+INFO  Opening project: /home/vscode/.ghidra_projects/ls/ls (DefaultProject)
+Decompiling 566 functions using 12 threads
 Setup 12 decompliers
-Completed 100 and 19%
-Completed 200 and 38%
-Completed 300 and 57%
-WARN  Decompiling 00126010, pcode error at 00126010: Unable to disassemble EXTERNAL block location: 00126010 (DecompileCallback)
-
-Decompiled 520 functions for ls in 5.361317157745361
-Wrote 520 decompilations for ls to decompilations/ls in 0.1671760082244873
+Decompiled 100 and 17%
+Decompiled 200 and 35%
+Decompiled 300 and 53%
+Decompiled 400 and 70%
+Decompiled 500 and 88%
+Decompiled 566 functions for ls in 1.9280855655670166
+0 decompilations already existed.
+Wrote 566 decompilations for ls to decompilations/ls in 0.06782746315002441
 ```
 
 
 ### Decompilation Output Dir
 
 ```bash
-vscode ➜ /tmp $ tree decompilations
-decompilations
+vscode ➜ /tmp $ tree ghidrecomps
+ghidrecomps
 └── ls
     ├── _ITM_deregisterTMCloneTable-00134078.c
     ├── _ITM_registerTMCloneTable-00134358.c
@@ -832,6 +870,51 @@ root((AfdRestartDgConnect))
         AfdServiceSuperAccept
 
 
+```
+
+## Example BSim signature generation
+
+Use `ghidrecomp` to generate Ghidra BSim compatible feature vectors. These XMLs can later be added to a BSim database. 
+
+### Command line
+```bash
+ghidrecomp --bsim --bsim-cat newcat:newval
+```
+
+### Output
+```bash
+(.env) vscode ➜ /workspaces/ghidrecomp (bsim) $ ghidrecomp --bsim --bsim-cat newcat:newval /bin/ls
+Starting decompliations: Namespace(bin='/bin/ls', cppexport=False, filters=None, project_path='ghidra_projects', gdt=None, output_path='ghidrecomps', skip_cache=False, sym_file_path=None, symbols_path='symbols', skip_symbols=False, thread_count=12, va=False, fa=False, max_ram_percent=50.0, print_flags=False, callgraphs=False, callgraph_filter='.', max_display_depth=None, max_time_cg_gen=5, cg_direction='calling', bsim=True, bsim_sig_path='bsim-xmls', bsim_template='medium_nosize', bsim_cat=['newcat:newval'])
+INFO  Using log config file: jar:file:/ghidra/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
+INFO  Using log file: /home/vscode/.ghidra/.ghidra_11.0_PUBLIC/application.log (LoggingInitialization)  
+INFO  Loading user preferences: /home/vscode/.ghidra/.ghidra_11.0_PUBLIC/preferences (Preferences)  
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (660 ms) (ClassSearcher)  
+<several lines omitted>
+Decompiled 566 functions for ls in 2.4373884201049805
+0 decompilations already existed.
+Wrote 566 decompilations for ls to ghidrecomps/ls/decomps in 0.16666936874389648
+Generating BSim sigs for 566 functions for ls
+Adding category type:newcat val:newval
+Categories added: [('newcat', 'newval')]
+Generated BSim sigs for 451 functions in 1.248070478439331
+Sigs are in ghidrecomps/bsim-xmls/sigs_35d820f0762118215cbe19fb44e612ca_ls
+```
+
+### Files generated
+
+```bash
+$ tree ghidrecomps
+ghidrecomps/
+├── bsim-xmls
+│   ├── sigs_35d820f0762118215cbe19fb44e612ca_ls
+│   ├── sigs_b4c4b6ef5980df8440fb26daffb4118f_afd.sys.10.0.22621.1415
+│   └── sigs_fffefca59f1dcb04e318b6b26fa1b50e_ls_aarch64
+├── ghidra_projects
+│   ├── ls
+│   │   └── ls.rep
+├── ls
+│   └── decomps
 ```
 
 

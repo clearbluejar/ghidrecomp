@@ -1,5 +1,5 @@
 from .decompile import decompile
-from .utility import get_parser
+from .parser import get_parser
 
 
 def main():
