@@ -30,9 +30,11 @@ def test_bsim_bad_known_arg(shared_datadir: Path):
                               "--bsim"
                               ])
 
-    with pytest.raises(ValueError):
+    if has_bsim():
+        # will only parse args is has_bsim
+        with pytest.raises(ValueError):
 
-        all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+            all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
 
 
         x = 1 / 1
