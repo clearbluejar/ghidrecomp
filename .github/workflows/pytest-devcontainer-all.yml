@@ -5,11 +5,11 @@ name: Pytest Python Package Repo Devcontainer Across Versions
 
 on:
   push:
-    branches: [ "main", "fix-workflows" ]
+    branches: [ "main" ]
     paths:
       - 'ghidrecomp/**'
       - 'tests/**'
-      - '.github/workflows/pytest-devcontainer-repo-all.yml'
+      - '.github/workflows/pytest-devcontainer-all.yml'
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
