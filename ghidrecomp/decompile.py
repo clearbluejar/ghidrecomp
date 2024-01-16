@@ -9,7 +9,7 @@ from pyhidra import HeadlessPyhidraLauncher, open_program
 
 from .utility import set_pdb, setup_symbol_server, set_remote_pdbs, analyze_program, get_pdb, apply_gdt
 from .callgraph import get_called, get_calling, CallGraph, gen_callgraph
-from .bsim import gen_bsim_sigs_for_program
+from .bsim import gen_bsim_sigs_for_program,has_bsim
 
 # needed for ghidra python vscode autocomplete
 if TYPE_CHECKING:
@@ -290,11 +290,16 @@ def decompile(args: Namespace):
         gensig = None
         manager = None
         if args.bsim:
-            start = time()
-            print(f'Generating BSim sigs for {len(all_funcs)} functions for {program.name}')
-            sig_name, gensig, manager = gen_bsim_sigs_for_program(program,bsim_sig_path,args.bsim_template,all_funcs)
-            print(f'Generated BSim sigs for {manager.numFunctions()} functions in {time() - start}')
-            print(f'Sigs are in {bsim_sig_path / sig_name}')
+            
+            if has_bsim():
+                start = time()
+                print(f'Generating BSim sigs for {len(all_funcs)} functions for {program.name}')
+                sig_name, func_count, cat_count = gen_bsim_sigs_for_program(program,bsim_sig_path,args.bsim_template,args.bsim_cat,all_funcs)
+                print(f'Generated BSim sigs for {func_count} functions in {time() - start}')
+                print(f'Sigs are in {bsim_sig_path / sig_name}')
+                assert cat_count == len(args.bsim_cat)
+            else:
+                print('WARN: Skipping BSim. BSim not present')
                    
         
         return (all_funcs, decompilations, bin_output_path, str(program.compiler), str(program.languageID), callgraphs)
