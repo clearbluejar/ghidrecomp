@@ -79,6 +79,7 @@ The main purpose for this is to use the decomplilations for research and analysi
   - [TOC](#toc)
   - [Features](#features)
   - [Usage](#usage)
+  - [Output Files Tree](#output-files-tree)
   - [Example Usage with Windows afd.sys:](#example-usage-with-windows-afdsys)
     - [Command line](#command-line)
     - [Output](#output)
@@ -103,7 +104,6 @@ The main purpose for this is to use the decomplilations for research and analysi
     - [Devcontainer / Docker](#devcontainer--docker)
       - [Option 1 - Devcontainer](#option-1---devcontainer)
       - [Option 2 - Docker](#option-2---docker)
-
 
 ## Features
 *all these features are ultimately provided by Ghidra*
@@ -181,6 +181,37 @@ BSim Options:
   --bsim-template BSIM_TEMPLATE
                         BSim database template (default: medium_nosize)
   --bsim-cat BSIM_CAT   BSim category. (type:value) --bsim-cat color:red (default: None)
+```
+
+## Output Files Tree
+
+All files: 
+```bash
+$ tree -L 2 ghidrecomps/ | more
+ghidrecomps/
+├── bins
+│   ├── afd.sys.10.0.22621.1415-b4c4b6ef5980df8440fb26daffb4118f
+│   └── ls_aarch64-fffefca59f1dcb04e318b6b26fa1b50e
+├── bsim-xmls
+│   └── sigs_fffefca59f1dcb04e318b6b26fa1b50e_ls_aarch64
+├── ghidra_projects
+│   ├── afd.sys.10.0.22621.1415-b4c4b6ef5980df8440fb26daffb4118f
+│   └── ls_aarch64-fffefca59f1dcb04e318b6b26fa1b50e
+└── symbols
+    ├── 000admin
+    ├── afd.pdb
+    └── pingme.txt
+```
+
+Decomps and callgraphs:
+```bash
+$ tree -L 2 ghidrecomps/bins/
+ghidrecomps/bins/
+├── afd.sys.10.0.22621.1415-b4c4b6ef5980df8440fb26daffb4118f
+│   ├── callgraphs
+│   └── decomps
+└── ls_aarch64-fffefca59f1dcb04e318b6b26fa1b50e
+    └── decomps
 ```
 
 
