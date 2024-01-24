@@ -5,7 +5,7 @@ from typing import Union, TYPE_CHECKING, Tuple, ContextManager, List
 import pyhidra
 from pyhidra.core import _setup_project, _analyze_program
 from ghidrecomp.utility import apply_gdt, setup_symbol_server, set_remote_pdbs
-from ghidrecomp.decompile import analyze_program
+from ghidrecomp.decompile import analyze_program, gen_proj_bin_name_from_path
 from ghidrecomp.parser import get_parser
 
 if TYPE_CHECKING:
@@ -78,6 +78,7 @@ def test_apply_gdt(shared_datadir: Path):
 
     bin_path = shared_datadir / 'afd.sys.10.0.22621.1415'
     gdt_path = shared_datadir / 'ntddk_64.gdt'
+    bin_proj_name = gen_proj_bin_name_from_path(bin_path)
 
     parser = get_parser()
 
@@ -102,7 +103,7 @@ def test_apply_gdt(shared_datadir: Path):
     expected_gdt_signature = 'void IoAcquireCancelSpinLock(PKIRQL Irql)'
 
     # open for analysis save it
-    with pyhidra.open_program(bin_path, project_location=project_location, project_name=bin_path.name, analyze=False) as flat_api:
+    with pyhidra.open_program(bin_path, project_location=project_location, project_name=bin_proj_name, analyze=False) as flat_api:
         from ghidra.program.model.listing import Program
 
         program: "Program" = flat_api.getCurrentProgram()
@@ -115,7 +116,7 @@ def test_apply_gdt(shared_datadir: Path):
         analyze_program(program, verbose=args.va)
 
     # open to test gdt, don't save
-    with open_program_dont_save(bin_path, project_location=project_location, project_name=bin_path.name, analyze=False) as flat_api:
+    with open_program_dont_save(bin_path, project_location=project_location, project_name=bin_proj_name, analyze=False) as flat_api:
 
         from ghidra.program.model.listing import Program
 
