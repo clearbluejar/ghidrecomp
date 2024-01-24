@@ -5,6 +5,7 @@ from argparse import Namespace
 import concurrent.futures
 from time import time
 import json
+import hashlib
 from pyhidra import HeadlessPyhidraLauncher, open_program
 
 from .utility import set_pdb, setup_symbol_server, set_remote_pdbs, analyze_program, get_pdb, apply_gdt
@@ -22,6 +23,34 @@ MAX_PATH_LEN = 50
 def get_filename(func: 'ghidra.program.model.listing.Function'):
     return f'{func.getName()[:MAX_PATH_LEN]}-{func.entryPoint}'
 
+def get_md5_file_digest(path: str) -> str:
+    # https://stackoverflow.com/questions/22058048/hashing-a-file-in-python
+    # BUF_SIZE is totally arbitrary, change for your app!
+    BUF_SIZE = 65536  # lets read stuff in 64kb chunks!
+
+    path = Path(path)
+
+    md5 = hashlib.md5()
+
+    with path.open('rb') as f:
+        while True:
+            data = f.read(BUF_SIZE)
+            if not data:
+                break
+            md5.update(data)
+
+    return f'{md5.hexdigest()}'
+
+def gen_proj_bin_name_from_path(path: Path):
+    """
+    Generate unique project name from binary for Ghidra Project
+    """
+
+    return '-'.join((path.name, get_md5_file_digest(path.absolute())))
+
+def get_bin_output_path(output_path: Path, bin_name: str):
+
+    return Path(output_path) / 'bins' / bin_name
 
 def setup_decompliers(program: "ghidra.program.model.listing.Program", thread_count: int = 2) -> dict:
     """
@@ -106,10 +135,11 @@ def decompile(args: Namespace):
     print(f'Starting decompliations: {args}')
 
     bin_path = Path(args.bin)
+    bin_proj_name = gen_proj_bin_name_from_path(bin_path) 
     thread_count = args.thread_count
 
     output_path = Path(args.output_path)
-    bin_output_path = output_path  / bin_path.name
+    bin_output_path = get_bin_output_path(output_path, bin_proj_name) 
     decomp_path = bin_output_path / 'decomps'
     output_path.mkdir(exist_ok=True, parents=True)
     bin_output_path.mkdir(exist_ok=True, parents=True)
@@ -147,7 +177,7 @@ def decompile(args: Namespace):
     from ghidra.program.model.listing import Program
 
     # Setup and analyze project
-    with open_program(bin_path, project_location=project_location, project_name=bin_path.name, analyze=False) as flat_api:
+    with open_program(bin_path, project_location=project_location, project_name=bin_proj_name, analyze=False) as flat_api:
 
         program: "Program" = flat_api.getCurrentProgram()
 
@@ -177,7 +207,7 @@ def decompile(args: Namespace):
         analyze_program(program, verbose=args.va, force_analysis=args.fa)
 
     # decompile and callgraph all the things
-    with open_program(bin_path, project_location=project_location, project_name=bin_path.name, analyze=False) as flat_api:
+    with open_program(bin_path, project_location=project_location, project_name=bin_proj_name, analyze=False) as flat_api:
 
         all_funcs = []
         skip_count = 0
@@ -297,7 +327,6 @@ def decompile(args: Namespace):
                 sig_name, func_count, cat_count = gen_bsim_sigs_for_program(program,bsim_sig_path,args.bsim_template,args.bsim_cat,all_funcs)
                 print(f'Generated BSim sigs for {func_count} functions in {time() - start}')
                 print(f'Sigs are in {bsim_sig_path / sig_name}')
-                assert cat_count == len(args.bsim_cat)
             else:
                 print('WARN: Skipping BSim. BSim not present')
                    

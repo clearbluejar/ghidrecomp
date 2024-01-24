@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from ghidrecomp import decompile, get_parser
-
+from ghidrecomp.decompile import get_bin_output_path, gen_proj_bin_name_from_path
 
 def test_decomplie_afd_callgraphs(shared_datadir: Path):
 
@@ -12,7 +12,8 @@ def test_decomplie_afd_callgraphs(shared_datadir: Path):
     args = parser.parse_args([f"{bin_path.absolute()}", "--callgraph-filter", "AfdRe",
                              "--filter", "AfdRe", "--callgraphs", "--skip-cache"])
 
-    expected_output_path = Path(args.output_path) / bin_path.name
+    bin_proj_name = gen_proj_bin_name_from_path(bin_path)
+    expected_output_path = get_bin_output_path(args.output_path, bin_proj_name)
 
     all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
 
@@ -33,7 +34,8 @@ def test_decomplie_afd_callgraphs_cached(shared_datadir: Path):
     args = parser.parse_args([f"{bin_path.absolute()}", "--callgraph-filter", "AfdRe",
                              "--filter", "AfdRe", "--callgraphs"])
 
-    expected_output_path = Path(args.output_path) / bin_path.name
+    bin_proj_name = gen_proj_bin_name_from_path(bin_path)
+    expected_output_path = get_bin_output_path(args.output_path, bin_proj_name)
 
     all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
 
@@ -53,7 +55,8 @@ def test_decomplie_afd_callgraphs_called_and_calling(shared_datadir: Path):
     args = parser.parse_args([f"{bin_path.absolute()}", "--callgraph-filter", "AfdRe",
                              "--filter", "AfdRe", "--callgraphs", "--skip-cache", "--cg-direction", "both"])
 
-    expected_output_path = Path(args.output_path) / bin_path.name
+    bin_proj_name = gen_proj_bin_name_from_path(bin_path)
+    expected_output_path = get_bin_output_path(args.output_path, bin_proj_name)
 
     all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
 

@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pyhidra
 from ghidrecomp import decompile, get_parser
+from ghidrecomp.decompile import get_bin_output_path, gen_proj_bin_name_from_path
 from ghidrecomp.bsim import has_bsim,add_bsim_args_to_parser,add_categories_to_prog
 from pyhidra.version import get_ghidra_version
 
@@ -56,7 +57,8 @@ def test_bsim_args_with_ls(shared_datadir: Path):
                               "--bsim"
                               ])
 
-    expected_output_path = Path(args.output_path) / bin_path.name
+    bin_proj_name = gen_proj_bin_name_from_path(bin_path)
+    expected_output_path = get_bin_output_path(args.output_path, bin_proj_name)
 
     all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
 
