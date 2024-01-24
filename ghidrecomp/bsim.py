@@ -187,6 +187,7 @@ def gen_bsim_sigs_for_program(prog: "ghidra.program.model.listing.Program", sigs
         manager_cats = [(cat.type,cat.category) for er in manager.executableRecordSet if er.allCategories is not None for cat in er.allCategories  ]
         print(f'Categories added: {manager_cats}')
         cat_add_count = len(manager_cats)
+        assert cat_add_count == len(categories)
     manager.saveXml(fwrite)
     fwrite.close()
 
