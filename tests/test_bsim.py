@@ -5,7 +5,7 @@ import pyhidra
 from ghidrecomp import decompile, get_parser
 from ghidrecomp.decompile import get_bin_output_path, gen_proj_bin_name_from_path
 from ghidrecomp.bsim import has_bsim,add_bsim_args_to_parser,add_categories_to_prog
-from pyhidra.version import get_ghidra_version
+from pyhidra import HeadlessPyhidraLauncher
 
 # check BSIM exists
 def test_bsim_should_exist():
@@ -13,7 +13,7 @@ def test_bsim_should_exist():
     pyhidra.start()
 
     # check ghidra version and bail if old
-    if get_ghidra_version() < '11.0':
+    if HeadlessPyhidraLauncher().app_info.version < '11.0':
         assert not has_bsim()
     else:
         assert has_bsim()
