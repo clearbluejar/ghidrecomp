@@ -321,7 +321,7 @@ def get_called_funcs_memo(f: "ghidra.program.model.listing.Function"):
 
 
 # Recursively calling to build calling graph
-def get_calling(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = CallGraph(), depth: int = 0, visited: tuple = None, verbose=False, include_ns=True, start_time=None, max_run_time=None, max_depth=MAX_DEPTH):
+def get_calling(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = None, depth: int = 0, visited: tuple = None, verbose=False, include_ns=True, start_time=None, max_run_time=None, max_depth=MAX_DEPTH):
     """
     Build a call graph of all calling functions
     Traverses depth first
@@ -329,6 +329,9 @@ def get_calling(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = 
 
     if f == None:
         return None
+    
+    if cgraph is None:
+        cgraph = CallGraph()
 
     if depth == 0:
         if verbose:
@@ -390,7 +393,7 @@ def func_is_external(f: "ghidra.program.model.listing.Function"):
 # Recursively calling to build called graph
 
 
-def get_called(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = CallGraph(), depth: int = 0, visited: list = [], verbose=False, include_ns=True, start_time=None, max_run_time=None, max_depth=MAX_DEPTH):
+def get_called(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = None, depth: int = 0, visited: list = [], verbose=False, include_ns=True, start_time=None, max_run_time=None, max_depth=MAX_DEPTH):
     """
     Build a call graph of all called functions
     Traverses depth first
@@ -398,6 +401,9 @@ def get_called(f: "ghidra.program.model.listing.Function", cgraph: CallGraph = C
 
     if f == None:
         return None
+    
+    if cgraph is None:
+        cgraph = CallGraph()
 
     if depth == 0:
         if verbose:
