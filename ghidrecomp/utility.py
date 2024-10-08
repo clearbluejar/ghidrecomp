@@ -119,8 +119,12 @@ def get_pdb(prog: "ghidra.program.model.listing.Program") -> "java.io.File":
     from ghidra.util.task import ConsoleTaskMonitor
     from pdb_ import PdbPlugin
 
-    find_opts = FindOption.of(FindOption.ALLOW_REMOTE)
-    # find_opts = FindOption.NO_OPTIONS
+    if hasattr(FindOption, 'ALLOW_UNTRUSTED'):
+        # Ghidra 11.2 +
+        find_opts = FindOption.of(FindOption.ALLOW_UNTRUSTED)
+    else:
+        # Ghidra < 11.2
+        find_opts = FindOption.of(FindOption.ALLOW_REMOTE)
 
     # Ghidra/Features/PDB/src/main/java/pdb/PdbPlugin.java#L191
     pdb = PdbPlugin.findPdb(prog, find_opts, ConsoleTaskMonitor())
@@ -148,8 +152,14 @@ def set_remote_pdbs(program: "ghidra.program.model.listing.Program", allow: bool
     from ghidra.app.plugin.core.analysis import PdbUniversalAnalyzer
     # Enable Remote Symbol Servers
 
-    PdbUniversalAnalyzer.setAllowRemoteOption(program, allow)
-    PdbAnalyzer.setAllowRemoteOption(program, allow)
+    if hasattr(PdbUniversalAnalyzer, 'setAllowUntrustedOption'):
+        # Ghidra 11.2 +
+        PdbUniversalAnalyzer.setAllowUntrustedOption(program, True)
+        PdbAnalyzer.setAllowUntrustedOption(program, True)
+    else:
+        # Ghidra < 11.2
+        PdbUniversalAnalyzer.setAllowRemoteOption(program, True)
+        PdbAnalyzer.setAllowRemoteOption(program, True)
 
 
 def apply_gdt(program: "ghidra.program.model.listing.Program", gdt_path:  Union[str, Path], verbose: bool = False):
