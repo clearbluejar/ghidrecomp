@@ -8,6 +8,7 @@ from .bsim import add_bsim_args_to_parser
 
 THREAD_COUNT = multiprocessing.cpu_count()
 
+
 def get_parser() -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(description='ghidrecomp - A Command Line Ghidra Decompiler',
@@ -17,6 +18,8 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--cppexport', action='store_true', help='Use Ghidras CppExporter to decompile to single file')
     parser.add_argument('--filter', dest='filters', action='append', help='Regex match for function name')
     parser.add_argument('--project-path', help='Path to base ghidra projects ', default='ghidra_projects')
+    parser.add_argument('--gzf', help='Export gzf of analyzed project', action='store_true')
+    parser.add_argument('--gzf-path', help='Path to store gzf of analyzed project', default='gzfs')
     parser.add_argument('--gdt', help='Additional GDT to apply', nargs='?', action='append')
     parser.add_argument('-o', '--output-path', help='Location for all decompilations', default='ghidrecomps')
     parser.add_argument("-v", "--version", action="version", version=__version__)
@@ -40,6 +43,5 @@ def get_parser() -> argparse.ArgumentParser:
     add_cg_args_to_parser(parser)
 
     add_bsim_args_to_parser(parser)
-    
 
     return parser
