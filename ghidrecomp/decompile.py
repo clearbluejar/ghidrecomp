@@ -8,9 +8,9 @@ import json
 import hashlib
 from pyhidra import HeadlessPyhidraLauncher, open_program
 
-from .utility import set_pdb, setup_symbol_server, set_remote_pdbs, analyze_program, get_pdb, apply_gdt
+from .utility import set_pdb, setup_symbol_server, set_remote_pdbs, analyze_program, get_pdb, apply_gdt, save_program_as_gzf
 from .callgraph import get_called, get_calling, CallGraph, gen_callgraph
-from .bsim import gen_bsim_sigs_for_program,has_bsim
+from .bsim import gen_bsim_sigs_for_program, has_bsim
 
 # needed for ghidra python vscode autocomplete
 if TYPE_CHECKING:
@@ -22,6 +22,7 @@ MAX_PATH_LEN = 50
 
 def get_filename(func: 'ghidra.program.model.listing.Function'):
     return f'{func.getName()[:MAX_PATH_LEN]}-{func.entryPoint}'
+
 
 def get_md5_file_digest(path: str) -> str:
     # https://stackoverflow.com/questions/22058048/hashing-a-file-in-python
@@ -41,6 +42,7 @@ def get_md5_file_digest(path: str) -> str:
 
     return f'{md5.hexdigest()}'
 
+
 def gen_proj_bin_name_from_path(path: Path):
     """
     Generate unique project name from binary for Ghidra Project
@@ -48,9 +50,11 @@ def gen_proj_bin_name_from_path(path: Path):
 
     return '-'.join((path.name, get_md5_file_digest(path.absolute())))
 
+
 def get_bin_output_path(output_path: Path, bin_name: str):
 
     return Path(output_path) / 'bins' / bin_name
+
 
 def setup_decompliers(program: "ghidra.program.model.listing.Program", thread_count: int = 2) -> dict:
     """
@@ -120,8 +124,8 @@ def decompile_to_single_file(path: Path,
         monitor = ConsoleTaskMonitor().DUMMY
 
     try:
-        # Ghidra CppExporter before 10.3.3 and later        
-        decompiler = CppExporter(None,create_header, create_file, emit_types, exclude_tags, tags)
+        # Ghidra CppExporter before 10.3.3 and later
+        decompiler = CppExporter(None, create_header, create_file, emit_types, exclude_tags, tags)
     except TypeError:
         # Ghidra CppExporter before 10.3.3
         decompiler = CppExporter(create_header, create_file, emit_types, exclude_tags, tags)
@@ -129,27 +133,34 @@ def decompile_to_single_file(path: Path,
     decompiler.export(c_file, prog, prog.getMemory(), monitor)
 
 
-
 def decompile(args: Namespace):
 
     print(f'Starting decompliations: {args}')
 
     bin_path = Path(args.bin)
-    bin_proj_name = gen_proj_bin_name_from_path(bin_path) 
+    bin_proj_name = gen_proj_bin_name_from_path(bin_path)
     thread_count = args.thread_count
 
     output_path = Path(args.output_path)
-    bin_output_path = get_bin_output_path(output_path, bin_proj_name) 
+    bin_output_path = get_bin_output_path(output_path, bin_proj_name)
     decomp_path = bin_output_path / 'decomps'
     output_path.mkdir(exist_ok=True, parents=True)
     bin_output_path.mkdir(exist_ok=True, parents=True)
     decomp_path.mkdir(exist_ok=True, parents=True)
-    
 
     if args.project_path == 'ghidra_projects':
         project_location = output_path / args.project_path
     else:
         project_location = Path(args.project_path)
+
+    gzf_path = None
+    if args.gzf:
+        if args.gzf_path == 'gzfs':
+            gzf_path = output_path / args.gzf_path
+        else:
+            gzf_path = Path(args.gzf_path)
+
+        gzf_path.mkdir(exist_ok=True, parents=True)
 
     if args.symbols_path == 'symbols':
         symbols_path = output_path / args.symbols_path
@@ -160,7 +171,6 @@ def decompile(args: Namespace):
         bsim_sig_path = output_path / args.bsim_sig_path
     else:
         bsim_sig_path = output_path / Path(args.bsim_sig_path)
-
 
     # turn on verbose
     launcher = HeadlessPyhidraLauncher(True)
@@ -204,7 +214,18 @@ def decompile(args: Namespace):
             print(f'Using file gdts: {gdt_names}')
 
         # analyze program if we haven't yet
-        analyze_program(program, verbose=args.va, force_analysis=args.fa)
+        analyze_program(program, verbose=args.va, force_analysis=args.fa, gzf_path=gzf_path)
+
+    # Save copy of program in gzf after analysis
+    if args.gzf:
+        from ghidra.base.project import GhidraProject
+        try:
+            project = GhidraProject.openProject(Path(project_location / bin_proj_name), bin_proj_name, True)
+            program = project.openProgram("/", bin_path.name, True)
+            save_program_as_gzf(program, gzf_path / bin_proj_name, project)
+        finally:
+            project.close(program)
+            project.close()
 
     # decompile and callgraph all the things
     with open_program(bin_path, project_location=project_location, project_name=bin_proj_name, analyze=False) as flat_api:
@@ -291,7 +312,7 @@ def decompile(args: Namespace):
                 max_display_depth = None
                 if args.max_display_depth is not None:
                     max_display_depth = int(args.max_display_depth)
-                    
+
                 with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
                     futures = (executor.submit(gen_callgraph, func, max_display_depth, direction, args.max_time_cg_gen, get_filename(func))
                                for direction in directions for func in all_funcs if args.skip_cache or get_filename(func) not in callgraphs_completed and re.search(args.callgraph_filter, func.name) is not None)
@@ -315,20 +336,19 @@ def decompile(args: Namespace):
                 print(f'Wrote {completed} callgraphs for {program.name} to {callgraph_path} in {time() - start}')
                 print(f'{len(all_funcs) - completed} callgraphs already existed.')
 
-
         # BSim
         gensig = None
         manager = None
         if args.bsim:
-            
+
             if has_bsim():
                 start = time()
                 print(f'Generating BSim sigs for {len(all_funcs)} functions for {program.name}')
-                sig_name, func_count, cat_count = gen_bsim_sigs_for_program(program,bsim_sig_path,args.bsim_template,args.bsim_cat,all_funcs)
+                sig_name, func_count, cat_count = gen_bsim_sigs_for_program(
+                    program, bsim_sig_path, args.bsim_template, args.bsim_cat, all_funcs)
                 print(f'Generated BSim sigs for {func_count} functions in {time() - start}')
                 print(f'Sigs are in {bsim_sig_path / sig_name}')
             else:
                 print('WARN: Skipping BSim. BSim not present')
-                   
-        
+
         return (all_funcs, decompilations, bin_output_path, str(program.compiler), str(program.languageID), callgraphs)

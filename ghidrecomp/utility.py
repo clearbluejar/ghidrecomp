@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from ghidra_builtins import *  # noqa: F403
 
 
-def analyze_program(program, verbose: bool = False, force_analysis: bool = False, save: bool = False):
+def analyze_program(program: "ghidra.program.model.listing.Program", verbose: bool = False, force_analysis: bool = False, save: bool = False, gzf_path: Path = None):
     """
     Modified pyhidra.core._analyze_program    
     """
@@ -45,6 +45,18 @@ def analyze_program(program, verbose: bool = False, force_analysis: bool = False
             GhidraScriptUtil.releaseBundleHostReference()
     else:
         print(f'{program} already analyzed... skipping')
+
+
+def save_program_as_gzf(program: "ghidra.program.model.listing.Program", gzf_path: Path, project):
+    from java.io import File
+    from ghidra.base.project import GhidraProject
+    # from java.io import IOException
+    print(f'Saving gzf archive to {gzf_path}.gzf')
+
+    # GhidraProject.saveAsPackedFile(program, File(f'{gzf_path.absolute()},{program.name}.gzf'), True)
+    from java.io import File
+    # project.close()
+    project.saveAsPackedFile(program, File(f'{gzf_path}.gzf'), True)
 
 
 def setup_symbol_server(symbols_path: Union[str, Path], level=1, server_urls=None) -> None:
