@@ -65,11 +65,12 @@ def setup_decompliers(program: "ghidra.program.model.listing.Program", thread_co
     from ghidra.app.decompiler import DecompileOptions
 
     decompilers = {}
-    default_options = DecompileOptions()
+    decomp_options = DecompileOptions()
+    decomp_options.grabFromProgram(program)
 
     for i in range(thread_count):
         decompilers.setdefault(i, DecompInterface())
-        decompilers[i].setOptions(default_options)
+        decompilers[i].setOptions(decomp_options)
         decompilers[i].openProgram(program)
 
     print(f'Setup {thread_count} decompliers')
