@@ -22,10 +22,9 @@ jobs:
         # cover the latest and all versions of all subreleases   
         image: [
           "latest",
+          "11.4.1ghidra3.13python-bookworm",
           "11.3.2ghidra3.12python-bookworm",
-          "11.3.1ghidra3.11python-bookworm",
           "11.3ghidra3.10python-bookworm",
-          # "11.3ghidra3.9python-bookworm",
           ]
     steps:
     - uses: actions/checkout@v3
