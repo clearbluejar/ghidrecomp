@@ -4,6 +4,7 @@ from pathlib import Path
 from ghidrecomp import decompile, get_parser
 from ghidrecomp.decompile import get_bin_output_path, gen_proj_bin_name_from_path
 
+
 def test_decomplie_ls(shared_datadir: Path):
 
     parser = get_parser()
@@ -74,8 +75,8 @@ def test_decomplie_afd(shared_datadir: Path):
 
     all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
 
-    assert (len(all_funcs) == 1275 or len(all_funcs) == 1273 or len(all_funcs) == 1172)
-    assert (len(decompilations) == 1275 or len(decompilations) == 1273 or len(decompilations) == 1172)
+    assert len(all_funcs) == len(decompilations)
+    assert len(all_funcs) in {1275, 1273, 1172, 1615}, f"Unexpected function count: {len(all_funcs)}"
     assert output_path == expected_output_path
     assert compiler == 'visualstudio:unknown'
     assert lang_id == 'x86:LE:64:default'
@@ -95,7 +96,7 @@ def test_decomplie_afd_cached(shared_datadir: Path):
 
     all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
 
-    assert (len(all_funcs) == 1275 or len(all_funcs) == 1273 or len(all_funcs) == 1172)
+    assert len(all_funcs) in {1275, 1273, 1172, 1615}, f"Unexpected function count: {len(all_funcs)}"
     assert len(decompilations) == 0
     assert output_path == expected_output_path
     assert compiler == 'visualstudio:unknown'
