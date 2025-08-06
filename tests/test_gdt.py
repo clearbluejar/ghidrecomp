@@ -2,8 +2,8 @@ import contextlib
 from pathlib import Path
 from typing import Union, TYPE_CHECKING, Tuple, ContextManager, List
 
-import pyhidra
-from pyhidra.core import _setup_project, _analyze_program
+import pyghidra
+from pyghidra.core import _setup_project, _analyze_program
 from ghidrecomp.utility import apply_gdt, setup_symbol_server, set_remote_pdbs
 from ghidrecomp.decompile import analyze_program, gen_proj_bin_name_from_path
 from ghidrecomp.parser import get_parser
@@ -41,10 +41,10 @@ def open_program_dont_save(
     :raises ValueError: If the provided language or compiler is invalid.
     """
 
-    from pyhidra.launcher import PyhidraLauncher, HeadlessPyhidraLauncher
+    from pyghidra.launcher import PyGhidraLauncher, HeadlessPyGhidraLauncher
 
-    if not PyhidraLauncher.has_launched():
-        HeadlessPyhidraLauncher().start()
+    if not PyGhidraLauncher.has_launched():
+        HeadlessPyGhidraLauncher().start()
 
     from ghidra.app.script import GhidraScriptUtil
     from ghidra.program.flatapi import FlatProgramAPI
@@ -95,15 +95,15 @@ def test_apply_gdt(shared_datadir: Path):
         symbols_path = output_path / args.symbols_path
     else:
         symbols_path = Path(args.symbols_path)
-   
+
     # turn on verbose
-    pyhidra.start(True)
+    pyghidra.start(True)
 
     symbol_to_test = 'IoAcquireCancelSpinLock'
     expected_gdt_signature = 'void IoAcquireCancelSpinLock(PKIRQL Irql)'
 
     # open for analysis save it
-    with pyhidra.open_program(bin_path, project_location=project_location, project_name=bin_proj_name, analyze=False) as flat_api:
+    with pyghidra.open_program(bin_path, project_location=project_location, project_name=bin_proj_name, analyze=False) as flat_api:
         from ghidra.program.model.listing import Program
 
         program: "Program" = flat_api.getCurrentProgram()

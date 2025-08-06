@@ -6,7 +6,7 @@ import concurrent.futures
 from time import time
 import json
 import hashlib
-from pyhidra import HeadlessPyhidraLauncher, open_program
+from pyghidra import HeadlessPyGhidraLauncher, open_program
 
 from .utility import set_pdb, setup_symbol_server, set_remote_pdbs, analyze_program, get_pdb, apply_gdt, save_program_as_gzf
 from .callgraph import get_called, get_calling, CallGraph, gen_callgraph
@@ -177,7 +177,7 @@ def decompile(args: Namespace):
         bsim_sig_path = output_path / Path(args.bsim_sig_path)
 
     # turn on verbose
-    launcher = HeadlessPyhidraLauncher(True)
+    launcher = HeadlessPyGhidraLauncher(True)
 
     # set max % of host RAM
     launcher.add_vmargs(f'-XX:MaxRAMPercentage={args.max_ram_percent}')

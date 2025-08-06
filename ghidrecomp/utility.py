@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 def analyze_program(program: "ghidra.program.model.listing.Program", verbose: bool = False, force_analysis: bool = False, save: bool = False, gzf_path: Path = None):
     """
-    Modified pyhidra.core._analyze_program    
+    Modified pyghidra.core._analyze_program    
     """
 
     from ghidra.program.flatapi import FlatProgramAPI
