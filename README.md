@@ -70,7 +70,7 @@ end
 
 ```
 
-The main purpose for this is to use the decomplilations for research and analysis. The tool relies on [Ghidra](https://ghidra-sre.org/) for decompilation and communicates to Ghidra with `jpype` via `pyhidra`.
+The main purpose for this is to use the decomplilations for research and analysis. The tool relies on [Ghidra](https://ghidra-sre.org/) for decompilation and communicates to Ghidra with `jpype` via `pyghidra`.
 
 ## TOC
 
@@ -1000,7 +1000,7 @@ Linux 4da2fe33369a 5.15.49-linuxkit #1 SMP PREEMPT Tue Sep 13 07:51:32 UTC 2022 
 vscode ➜ / $ ls /ghidra/
 Extensions  GPL  Ghidra  LICENSE  bom.json  docs  ghidraRun  ghidraRun.bat  licenses  server  support
 vscode ➜ / $ pip install ghidrecomp
-Successfully installed Jpype1-1.4.1 ghidrecomp-0.1.0 packaging-23.0 pyhidra-0.4.1
+Successfully installed Jpype1-1.4.1 ghidrecomp-0.1.0 packaging-23.0 pyghidra-0.4.1
 ```
 
 

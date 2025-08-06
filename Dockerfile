@@ -9,8 +9,6 @@ WORKDIR /home/vscode/
 # install latest from pip
 RUN pip install ghidrecomp
 
-RUN python -m pyhidra.install_plugins
-
 # point absolute ghidriffs dir to user
 # this supports absoulte mapping "docker run --rm -it -v ${PWD}/ghidriffs:/ghidriffs ghidriff /bin/cat1 /bin/cat2"
 RUN ln -s /ghidrecomps /home/vscode/

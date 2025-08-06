@@ -1,11 +1,11 @@
 import pytest
 from pathlib import Path
 
-import pyhidra
+import pyghidra
 from ghidrecomp import decompile, get_parser
 from ghidrecomp.decompile import get_bin_output_path, gen_proj_bin_name_from_path
 from ghidrecomp.bsim import has_bsim, add_bsim_args_to_parser, add_categories_to_prog
-from pyhidra import HeadlessPyhidraLauncher
+from pyghidra import HeadlessPyGhidraLauncher
 from pathlib import Path
 
 
