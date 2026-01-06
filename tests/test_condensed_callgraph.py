@@ -71,7 +71,7 @@ def test_condensed_called_callgraph(condensed_test_binary):
         "--filter", r"\bmain\b" # We only need one callgraph to check for condensation
     ])
 
-    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
     assert len(callgraphs) > 0, "No callgraphs were generated"
 
@@ -112,7 +112,7 @@ def test_condensed_calling_callgraph(condensed_test_binary):
         "--max-time-cg-gen", "360",
     ])
 
-    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
     assert len(callgraphs) > 0, "No callgraphs were generated"
 
@@ -156,7 +156,7 @@ def test_condensed_calling_callgraph_dynamic(condensed_test_binary):
         "--max-time-cg-gen", "360",
     ])
 
-    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
     assert len(callgraphs) > 0, "No callgraphs were generated"
 

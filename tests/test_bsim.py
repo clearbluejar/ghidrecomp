@@ -37,7 +37,7 @@ def test_bsim_bad_known_arg(shared_datadir: Path):
         # will only parse args is has_bsim
         with pytest.raises(ValueError):
 
-            all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+            all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
         x = 1 / 1
 
@@ -62,7 +62,7 @@ def test_bsim_args_with_ls(shared_datadir: Path):
     bin_proj_name = gen_proj_bin_name_from_path(bin_path)
     expected_output_path = get_bin_output_path(args.output_path, bin_proj_name)
 
-    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
     assert len(all_funcs) == 532
     assert len(decompilations) == 532

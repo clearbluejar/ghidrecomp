@@ -94,11 +94,18 @@ The main purpose for this is to use the decomplilations for research and analysi
     - [Output](#output-2)
     - [Sample Calling Callgraph Output AfdRestartDgConnect:](#sample-calling-callgraph-output-afdrestartdgconnect)
     - [Sample MindMap Output for AfdRestartDgConnect](#sample-mindmap-output-for-afdrestartdgconnect)
+  - [Example SAST Scanning](#example-sast-scanning)
+    - [Command line with multiple rule files](#command-line-with-multiple-rule-files)
+    - [Command line with custom rule directory](#command-line-with-custom-rule-directory)
+    - [Command line with comma-separated rules (backward compatible)](#command-line-with-comma-separated-rules-backward-compatible)
+    - [Output](#output-3)
+    - [SAST Output Files](#sast-output-files)
   - [Example BSim signature generation](#example-bsim-signature-generation)
     - [Command line](#command-line-2)
-    - [Output](#output-3)
+    - [Output](#output-4)
     - [Files generated](#files-generated)
   - [Installation](#installation)
+    - [Optional SAST dependencies](#optional-sast-dependencies)
     - [Windows](#windows)
     - [Linux / Mac](#linux--mac)
     - [Devcontainer / Docker](#devcontainer--docker)
@@ -108,7 +115,7 @@ The main purpose for this is to use the decomplilations for research and analysi
 ## Features
 *all these features are ultimately provided by Ghidra*
 
-- Decompile all the functions (threaded)
+- Decompile all functions (threaded)
   - to a folder (`-o OUTPUT_PATH`)
   - to a single c file and header file (`--cppexport`)
 - Auto-downloaded symbols for supported symbol servers (`-s SYMBOLS_PATH`)
@@ -118,9 +125,13 @@ The main purpose for this is to use the decomplilations for research and analysi
   - https://software.intel.com/sites/downloads/symbols/
   - https://driver-symbols.nvidia.com/
   - https://download.amd.com/dir/bin/
-- Specify the pdb for the binary (`--sym-file-path`)
+- Specify pdb for binary (`--sym-file-path`)
 - Filter functions to decompile that match regex (`--filter`)
 - Apply custom data types (`--gdt`)
+- **SAST scanning** (`--sast`) with Semgrep for static analysis of decompiled code
+  - Support for multiple rule files/directories
+  - SARIF output for integration with security tools
+  - Preprocessing of Ghidra-specific calling conventions
 
 ## Usage
 
@@ -129,7 +140,7 @@ usage: ghidrecomp [-h] [--cppexport] [--filter FILTERS] [--project-path PROJECT_
                   [--sym-file-path SYM_FILE_PATH | -s SYMBOLS_PATH | --skip-symbols] [-t THREAD_COUNT] [--va] [--fa]
                   [--max-ram-percent MAX_RAM_PERCENT] [--print-flags] [--callgraphs] [--callgraph-filter CALLGRAPH_FILTER] [--mdd MAX_DISPLAY_DEPTH]
                   [--max-time-cg-gen MAX_TIME_CG_GEN] [--cg-direction {calling,called,both}] [--bsim] [--bsim-sig-path BSIM_SIG_PATH]
-                  [--bsim-template BSIM_TEMPLATE] [--bsim-cat BSIM_CAT]
+                  [--bsim-template BSIM_TEMPLATE] [--bsim-cat BSIM_CAT] [--sast] [--semgrep-rules SEMGREP_RULES] [--codeql-rules CODEQL_RULES]
                   bin
 
 ghidrecomp - A Command Line Ghidra Decompiler
@@ -181,6 +192,13 @@ BSim Options:
   --bsim-template BSIM_TEMPLATE
                         BSim database template (default: medium_nosize)
   --bsim-cat BSIM_CAT   BSim category. (type:value) --bsim-cat color:red (default: None)
+
+SAST Options:
+  --sast                Run SAST scanning on decompiled code with semgrep and CodeQL (default: False)
+  --semgrep-rules SEMGREP_RULES
+                        Path to local semgrep rule file or directory (can be specified multiple times, default: p/c) (default: None)
+  --codeql-rules CODEQL_RULES
+                        Comma-separated paths to local CodeQL query directories (placeholder) (default: None)
 ```
 
 ## Output Files Tree
@@ -203,15 +221,17 @@ ghidrecomps/
     └── pingme.txt
 ```
 
-Decomps and callgraphs:
+Decomps, callgraphs, and SAST results:
 ```bash
 $ tree -L 2 ghidrecomps/bins/
 ghidrecomps/bins/
 ├── afd.sys.10.0.22621.1415-b4c4b6ef5980df8440fb26daffb4118f
 │   ├── callgraphs
-│   └── decomps
+│   ├── decomps
+│   └── sast
 └── ls_aarch64-fffefca59f1dcb04e318b6b26fa1b50e
-    └── decomps
+    ├── decomps
+    └── sast
 ```
 
 
@@ -903,6 +923,51 @@ root((AfdRestartDgConnect))
 
 ```
 
+## Example SAST Scanning
+
+Use `ghidrecomp` to run static analysis on decompiled code using Semgrep rules. 
+
+### Command line with multiple rule files
+```bash
+ghidrecomp bins/clfs.sys.x64.10.0.26100.3624-7fc7ad.gzf-e38b94.gzf \
+  --sast \
+  --semgrep-rules semgrep-rules/c/integer-wraparound.yaml \
+  --semgrep-rules semgrep-rules/c/integer-truncation.yaml
+```
+
+### Command line with custom rule directory
+```bash
+ghidrecomp /bin/ls --sast --semgrep-rules /path/to/custom/rules/
+```
+
+### Command line with comma-separated rules (backward compatible)
+```bash
+ghidrecomp /bin/ls --sast --semgrep-rules rule1.yaml,rule2.yaml
+```
+
+### Output
+```bash
+Running SAST scanning...
+Running semgrep with configs: ['semgrep-rules/c/integer-wraparound.yaml', 'semgrep-rules/c/integer-truncation.yaml']
+Running semgrep command: /usr/local/bin/semgrep scan --metrics=off --disable-version-check --quiet --error --sarif --timeout 30 --no-git-ignore -c semgrep-rules/c/integer-wraparound.yaml -c semgrep-rules/c/integer-truncation.yaml /tmp/tmpXXXXXX/decomps
+Semgrep scan completed successfully
+```
+
+### SAST Output Files
+The SAST scan creates a `sast/` directory in the binary output folder:
+```bash
+$ tree ghidrecomps/bins/ls/sast/
+ghidrecomps/bins/ls/sast/
+├── semgrep.sarif
+├── semgrep.exit
+└── logs/
+    └── semgrep.stderr.log
+```
+
+- `semgrep.sarif`: SARIF format results compatible with security tools
+- `semgrep.exit`: Exit code from semgrep process
+- `logs/semgrep.stderr.log`: Standard error output from semgrep
+
 ## Example BSim signature generation
 
 Use `ghidrecomp` to generate Ghidra BSim compatible feature vectors. These XMLs can later be added to a BSim database. 
@@ -914,7 +979,7 @@ ghidrecomp --bsim --bsim-cat newcat:newval
 
 ### Output
 ```bash
-(.env) vscode ➜ /workspaces/ghidrecomp (bsim) $ ghidrecomp --bsim --bsim-cat newcat:newval /bin/ls
+(.venv) vscode ➜ /workspaces/ghidrecomp (bsim) $ ghidrecomp --bsim --bsim-cat newcat:newval /bin/ls
 Starting decompliations: Namespace(bin='/bin/ls', cppexport=False, filters=None, project_path='ghidra_projects', gdt=None, output_path='ghidrecomps', skip_cache=False, sym_file_path=None, symbols_path='symbols', skip_symbols=False, thread_count=12, va=False, fa=False, max_ram_percent=50.0, print_flags=False, callgraphs=False, callgraph_filter='.', max_display_depth=None, max_time_cg_gen=5, cg_direction='calling', bsim=True, bsim_sig_path='bsim-xmls', bsim_template='medium_nosize', bsim_cat=['newcat:newval'])
 INFO  Using log config file: jar:file:/ghidra/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
 INFO  Using log file: /home/vscode/.ghidra/.ghidra_11.0_PUBLIC/application.log (LoggingInitialization)  
@@ -954,6 +1019,18 @@ ghidrecomps/
 1. [Download](https://github.com/NationalSecurityAgency/ghidra/releases) and [install Ghidra](https://htmlpreview.github.io/?https://github.com/NationalSecurityAgency/ghidra/blob/stable/GhidraDocs/InstallationGuide.html#Install) and [Java](https://htmlpreview.github.io/?https://github.com/NationalSecurityAgency/ghidra/blob/stable/GhidraDocs/InstallationGuide.html#JavaNotes) required for Ghidra.
 2. Set Ghidra Environment Variable `GHIDRA_INSTALL_DIR` to Ghidra install location.
 3. Pip install `ghidrecomp`
+
+### Optional SAST dependencies
+
+For SAST scanning functionality, install with optional dependencies:
+```bash
+pip install 'ghidrecomp[sast]'
+```
+
+This will install Semgrep for static analysis. You can also install it manually:
+```bash
+pip install semgrep
+```
 
 ### Windows
 

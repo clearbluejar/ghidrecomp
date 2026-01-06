@@ -16,7 +16,7 @@ def test_decomplie_ls(shared_datadir: Path):
     bin_proj_name = gen_proj_bin_name_from_path(bin_path)
     expected_output_path = get_bin_output_path(args.output_path, bin_proj_name)
 
-    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
     assert len(all_funcs) == 532
     assert len(decompilations) == 532
@@ -37,7 +37,7 @@ def test_decomplie_ls_cached(shared_datadir: Path):
     bin_proj_name = gen_proj_bin_name_from_path(bin_path)
     expected_output_path = get_bin_output_path(args.output_path, bin_proj_name)
 
-    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
     assert len(all_funcs) == 532
     assert len(decompilations) == 0
@@ -55,7 +55,7 @@ def test_ctype_filter_ls(shared_datadir: Path):
 
     args = parser.parse_args([f"{bin_path.absolute()}", "--filter", "ctype", "--skip-cache"])
 
-    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
     assert len(all_funcs) == 8
     assert len(decompilations) == 8
@@ -73,7 +73,7 @@ def test_decomplie_afd(shared_datadir: Path):
     bin_proj_name = gen_proj_bin_name_from_path(bin_path)
     expected_output_path = get_bin_output_path(args.output_path, bin_proj_name)
 
-    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
     assert len(all_funcs) == len(decompilations)
     assert len(all_funcs) in {1275, 1273, 1172, 1615,1277}, f"Unexpected function count: {len(all_funcs)}"
@@ -94,7 +94,7 @@ def test_decomplie_afd_cached(shared_datadir: Path):
     bin_proj_name = gen_proj_bin_name_from_path(bin_path)
     expected_output_path = get_bin_output_path(args.output_path, bin_proj_name)
 
-    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
     assert len(all_funcs) in {1275, 1273, 1172, 1615,1277}, f"Unexpected function count: {len(all_funcs)}"
     assert len(decompilations) == 0

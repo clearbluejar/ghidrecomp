@@ -22,7 +22,7 @@ def test_gzf_created(shared_datadir: Path):
 
     gzf_output_path = Path(args.output_path) / 'gzfs' / f"{bin_proj_name}.gzf"
 
-    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
     assert len(all_funcs) == 8
     assert len(decompilations) == 8
@@ -46,7 +46,7 @@ def test_gzf_created_with_path(shared_datadir: Path):
 
     gzf_output_path = gzf_custom_path / f"{bin_proj_name}.gzf"
 
-    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
     assert len(all_funcs) == 8
     assert len(decompilations) == 8

@@ -5,6 +5,7 @@ from ghidrecomp import __version__
 
 from .callgraph import add_cg_args_to_parser
 from .bsim import add_bsim_args_to_parser
+from .sast import add_sast_args_to_parser
 
 THREAD_COUNT = multiprocessing.cpu_count()
 
@@ -43,5 +44,7 @@ def get_parser() -> argparse.ArgumentParser:
     add_cg_args_to_parser(parser)
 
     add_bsim_args_to_parser(parser)
+
+    add_sast_args_to_parser(parser)
 
     return parser

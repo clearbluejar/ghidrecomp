@@ -61,7 +61,7 @@ def test_get_all_paths_graph(multipath_test_binary):
         "--filter", r"\bmain\b"
     ])
 
-    _, _, _, _, _, callgraphs = decompile(args)
+    _, _, _, _, _, callgraphs, sast_sarifs = decompile(args)
 
     main_called_graph = None
     for name, direction, callgraph, _ in callgraphs:

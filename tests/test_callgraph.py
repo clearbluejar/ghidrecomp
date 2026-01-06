@@ -49,7 +49,7 @@ def test_decomplie_afd_callgraphs(shared_datadir: Path):
     bin_proj_name = gen_proj_bin_name_from_path(bin_path)
     expected_output_path = get_bin_output_path(args.output_path, bin_proj_name)
 
-    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
     assert len(all_funcs) == 73
     assert len(decompilations) == 73
@@ -71,7 +71,7 @@ def test_decomplie_afd_callgraphs_cached(shared_datadir: Path):
     bin_proj_name = gen_proj_bin_name_from_path(bin_path)
     expected_output_path = get_bin_output_path(args.output_path, bin_proj_name)
 
-    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
     assert len(all_funcs) == 73
     assert len(decompilations) == 0
@@ -92,7 +92,7 @@ def test_decomplie_afd_callgraphs_called_and_calling(shared_datadir: Path):
     bin_proj_name = gen_proj_bin_name_from_path(bin_path)
     expected_output_path = get_bin_output_path(args.output_path, bin_proj_name)
 
-    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
     assert len(all_funcs) == 73
     assert len(decompilations) == 73
@@ -117,7 +117,7 @@ def test_callgraph_bin(test_binary):
         "--filter", r"\bmain\b|\bchild\b"
     ])
 
-    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs = decompile(args)
+    all_funcs, decompilations, output_path, compiler, lang_id, callgraphs, sast_sarifs = decompile(args)
 
     # Filter for the functions we are interested in
     main_funcs = [f for f in all_funcs if f.name == "main"]

@@ -11,6 +11,7 @@ from pyghidra import HeadlessPyGhidraLauncher, open_program
 from .utility import set_pdb, setup_symbol_server, set_remote_pdbs, analyze_program, get_pdb, apply_gdt, save_program_as_gzf
 from .callgraph import gen_callgraph
 from .bsim import gen_bsim_sigs_for_program, has_bsim
+from .sast import check_tools, run_semgrep_scan, run_codeql_scan, merge_sarif_files, generate_sast_summary, preprocess_c_files
 
 # needed for ghidra python vscode autocomplete
 if TYPE_CHECKING:
@@ -48,12 +49,13 @@ def gen_proj_bin_name_from_path(path: Path):
     Generate unique project name from binary for Ghidra Project
     """
 
-    return '-'.join((path.name, get_md5_file_digest(path.absolute())))
+    return '-'.join((path.name, get_md5_file_digest(path.absolute())[:6]))
+
 
 
 def get_bin_output_path(output_path: Path, bin_name: str):
 
-    return Path(output_path) / 'bins' / bin_name
+    return Path(output_path) / 'results' / 'bins' / bin_name
 
 
 def setup_decompliers(program: "ghidra.program.model.listing.Program", thread_count: int = 2) -> dict:
@@ -375,4 +377,48 @@ def decompile(args: Namespace):
             else:
                 print('WARN: Skipping BSim. BSim not present')
 
-        return (all_funcs, decompilations, bin_output_path, str(program.compiler), str(program.languageID), callgraphs)
+        # SAST scanning
+        sast_sarifs = []
+        if args.sast:
+            print('Running SAST scanning...')
+            try:
+                check_tools()
+                # Parse rules
+                semgrep_rules = []
+                if args.semgrep_rules:
+                    # Handle both multiple --semgrep-rules arguments and comma-separated values
+                    for rule_arg in args.semgrep_rules:
+                        semgrep_rules.extend([r.strip() for r in rule_arg.split(',') if r.strip()])
+                codeql_rules = args.codeql_rules.split(',') if args.codeql_rules else []
+
+                # Preprocess decompiled files for SAST analysis
+                preprocess_c_files(decomp_path)
+                
+                # Run semgrep
+                sast_path = bin_output_path / 'sast'
+                sarif_path = run_semgrep_scan(decomp_path, semgrep_rules, sast_path / 'semgrep.sarif')
+                sast_sarifs.append(sarif_path)
+
+                # Run CodeQL (placeholder)
+                codeql_sarif_path = run_codeql_scan(decomp_path, codeql_rules, sast_path / 'codeql.sarif')
+                if codeql_sarif_path:
+                    sast_sarifs.append(codeql_sarif_path)
+
+                # Generate SAST summary
+                if sast_sarifs:
+                    try:
+                        summary = generate_sast_summary(sast_sarifs, str(decomp_path))
+                        summary_path = sast_path / 'sast_summary.json'
+                        with open(summary_path, 'w') as f:
+                            json.dump(summary, f, indent=2)
+                        print(f'SAST summary written to {summary_path}')
+                        print(f'Total findings: {summary["total_findings"]}, Files scanned: {summary["files_scanned"]}')
+                    except Exception as e:
+                        print(f'Warning: Failed to generate SAST summary: {e}')
+
+                print(f'SAST scanning completed for {program.name}')
+
+            except RuntimeError as e:
+                print(f'Error during SAST scanning: {e}')
+
+        return (all_funcs, decompilations, bin_output_path, str(program.compiler), str(program.languageID), callgraphs, sast_sarifs)
