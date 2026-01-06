@@ -56,5 +56,5 @@ jobs:
           fi
 
           # install package and testing 
-          pip install "ghidrecomp[testing]"
+          pip install "ghidrecomp[sast,testing]"
           pytest -rA
