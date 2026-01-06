@@ -216,6 +216,10 @@ def run_semgrep_scan(decomp_dir: Path, rules_dirs: List[str], out_sarif: Path) -
 
     if success:
         print(f"Semgrep scan completed successfully")
+        # Copy the generated SARIF to the requested output location
+        if sarif_path != str(out_sarif) and Path(sarif_path).exists():
+            import shutil
+            shutil.copy2(sarif_path, out_sarif)
     else:
         print("Warning: Semgrep scan failed")
         # Write empty SARIF on failure
