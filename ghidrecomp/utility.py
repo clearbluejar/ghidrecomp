@@ -149,8 +149,8 @@ def set_pdb(program: "ghidra.program.model.listing.Program", path: Union[str, Pa
     from ghidra.app.plugin.core.analysis import PdbUniversalAnalyzer
     from java.io import File
 
-    print(f'Setting pdb to {symbol_path}')
     symbol_path = Path(path)
+    print(f'Setting pdb to {symbol_path}')
     pdbFile = File(symbol_path)
     PdbUniversalAnalyzer.setPdbFileOption(program, pdbFile)
 
