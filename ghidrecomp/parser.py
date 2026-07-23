@@ -15,7 +15,14 @@ def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='ghidrecomp - A Command Line Ghidra Decompiler',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('bin', help='Path to binary used for analysis')
+    parser.add_argument('bin', nargs='?', default=None,
+                        help='Path to binary used for analysis (required unless --existing-project is used)')
+    parser.add_argument('--existing-project',
+                        help='Path to an existing Ghidra .gpr file; decompile all contained programs')
+    parser.add_argument('--program-name', dest='program_filters', action='append',
+                        help='(existing-project only) substring match to limit which programs are decompiled; repeatable')
+    parser.add_argument('--force-reanalyze', action='store_true',
+                        help='(existing-project only) run analyze/gdt/symbol-server steps; default skips them')
     parser.add_argument('--cppexport', action='store_true', help='Use Ghidras CppExporter to decompile to single file')
     parser.add_argument('--filter', dest='filters', action='append', help='Regex match for function name')
     parser.add_argument('--project-path', help='Path to base ghidra projects ', default='ghidra_projects')

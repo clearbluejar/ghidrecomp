@@ -1,4 +1,5 @@
 import re
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 from argparse import Namespace
@@ -83,7 +84,7 @@ def setup_decompliers(program: "ghidra.program.model.listing.Program", thread_co
 def decompile_func(func: 'ghidra.program.model.listing.Function',
                    decompilers: dict,
                    thread_id: int = 0,
-                   timeout: int = 0,
+                   timeout: int = 120,  # per-function decompile bound (s); overridable via GHIDRECOMP_DECOMP_TIMEOUT (0 = infinite/stock). Keeps a CFG-corrupt function from wedging a worker forever.
                    monitor=None) -> list:
     """
     Decompile function and return [funcname, decompilation]
@@ -112,6 +113,7 @@ def decompile_to_single_file(path: Path,
                              create_header: bool = True,
                              create_file: bool = True,
                              emit_types: bool = True,
+                             emit_globals: bool = False,
                              exclude_tags: bool = False,
                              tags: str = None,
                              verbose: bool = True):
@@ -130,33 +132,308 @@ def decompile_to_single_file(path: Path,
         monitor = ConsoleTaskMonitor().DUMMY
 
     try:
-        # Ghidra CppExporter before 10.3.3 and later
-        decompiler = CppExporter(None, create_header, create_file, emit_types, exclude_tags, tags)
+        # Ghidra 12.x and later: adds emitGlobals (7 args after DecompileOptions)
+        decompiler = CppExporter(None, create_header, create_file, emit_types,
+                                 emit_globals, exclude_tags, tags)
     except TypeError:
-        # Ghidra CppExporter before 10.3.3
-        decompiler = CppExporter(create_header, create_file, emit_types, exclude_tags, tags)
+        try:
+            # Ghidra 10.3.3 - 11.x
+            decompiler = CppExporter(None, create_header, create_file, emit_types, exclude_tags, tags)
+        except TypeError:
+            # Ghidra before 10.3.3
+            decompiler = CppExporter(create_header, create_file, emit_types, exclude_tags, tags)
 
     decompiler.export(c_file, prog, prog.getMemory(), monitor)
+
+
+def process_program(program: "ghidra.program.model.listing.Program",
+                    args: Namespace,
+                    bin_output_path: Path,
+                    decomp_path: Path,
+                    bsim_sig_path: Path,
+                    monitor,
+                    thread_count: int) -> tuple:
+    """Decompile / callgraph / BSim / SAST a single already-open program."""
+
+    all_funcs = []
+    skip_count = 0
+
+    for f in program.functionManager.getFunctions(True):
+
+        if args.filters:
+            if any([re.search(fil, f.name, re.IGNORECASE) for fil in args.filters]):
+                all_funcs.append(f)
+            else:
+                skip_count += 1
+        else:
+            all_funcs.append(f)
+
+    if skip_count > 0:
+        print(f'Skipped {skip_count} functions that failed to match any of {args.filters}')
+
+    decompilations = []
+    callgraphs = []
+
+    if args.cppexport:
+        print(f"Decompiling {len(all_funcs)} functions using Ghidra's CppExporter")
+        c_file = decomp_path / Path(program.getName() + '.c')
+        start = time()
+        decompile_to_single_file(c_file, program)
+        print(f'Decompiled {len(all_funcs)} functions for {program.name} in {time() - start}')
+        print(f"Wrote results to {c_file} and {c_file.stem + '.h'}")
+    else:
+        print(f'Decompiling {len(all_funcs)} functions using {thread_count} threads')
+
+        decompilers = setup_decompliers(program, thread_count)
+        completed = 0
+
+        # Decompile all files
+        start = time()
+        # Per-function decompile timeout (seconds). Bounds pathological / CFG-corrupt
+        # functions so a single runaway can't wedge a worker (and ghidrecomp) forever.
+        # Override with GHIDRECOMP_DECOMP_TIMEOUT; 0 = infinite (stock behavior).
+        _decomp_timeout = int(os.environ.get('GHIDRECOMP_DECOMP_TIMEOUT', '120') or '120')
+        with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
+            futures = (executor.submit(decompile_func, func, decompilers, thread_id % thread_count, timeout=_decomp_timeout, monitor=monitor)
+                       for thread_id, func in enumerate(all_funcs) if args.skip_cache or not (decomp_path / (get_filename(func) + '.c')).exists())
+
+            for future in concurrent.futures.as_completed(futures):
+                decompilations.append(future.result())
+                completed += 1
+                if (completed % 100) == 0:
+                    print(f'Decompiled {completed} and {int(completed/len(all_funcs)*100)}%')
+
+        print(f'Decompiled {completed} functions for {program.name} in {time() - start}')
+        print(f'{len(all_funcs) - completed} decompilations already existed.')
+
+        # Save all decomps
+        start = time()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
+            futures = (executor.submit((decomp_path / (name + '.c')).write_text, decomp)
+                       for name, decomp, sig in decompilations)
+
+            for future in concurrent.futures.as_completed(futures):
+                pass
+
+        print(f'Wrote {completed} decompilations for {program.name} to {decomp_path} in {time() - start}')
+
+        # Generate callgrpahs for functions
+        if args.callgraphs:
+
+            start = time()
+            completed = 0
+            callgraph_path = bin_output_path / 'callgraphs'
+            callgraphs_completed_path = callgraph_path / 'completed_callgraphs.json'
+            if callgraphs_completed_path.exists():
+                callgraphs_completed = json.loads(callgraphs_completed_path.read_text())
+            else:
+                callgraphs_completed = []
+
+            callgraph_path.mkdir(exist_ok=True)
+
+            if args.cg_direction == 'both':
+                directions = ['called', 'calling']
+            else:
+                directions = [args.cg_direction]
+
+            max_display_depth = None
+            if args.max_display_depth is not None:
+                max_display_depth = int(args.max_display_depth)
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
+                futures = (executor.submit(gen_callgraph, func, max_display_depth, direction, args.max_time_cg_gen, get_filename(func), not args.no_call_refs, args.condense_threshold, args.top_layers, args.bottom_layers, wrap_mermaid=True)
+                           for direction in directions for func in all_funcs if args.skip_cache or get_filename(func) not in callgraphs_completed and re.search(args.callgraph_filter, func.name) is not None)
+
+                for future in concurrent.futures.as_completed(futures):
+
+                    callgraphs.append(future.result())
+                    name, direction, callgraph, graphs = callgraphs[-1]
+
+                    for ctype, chart in graphs:
+                        if ctype == "mermaid_url":
+                            (callgraph_path / f"{name}.url.{direction}.md").write_text(chart)
+                        else:
+                            (callgraph_path / f"{name}.{ctype}.{direction}.md").write_text(chart)
+
+                    callgraphs_completed.append(name)
+
+                    completed += 1
+                    if (completed % 100) == 0:
+                        per_complete = int(completed/len(all_funcs)*100*len(directions))
+                        print(f'\nGenerated callgraph {completed} and {per_complete}%\n')
+
+            callgraphs_completed_path.write_text(json.dumps(callgraphs_completed))
+            print(f'Callgraphed {completed} functions for {program.name} in {time() - start}')
+            print(f'Wrote {completed} callgraphs for {program.name} to {callgraph_path} in {time() - start}')
+            print(f'{len(all_funcs) - completed} callgraphs already existed.')
+
+    # BSim
+    if args.bsim:
+        if has_bsim():
+            start = time()
+            print(f'Generating BSim sigs for {len(all_funcs)} functions for {program.name}')
+            sig_name, func_count, cat_count = gen_bsim_sigs_for_program(
+                program, bsim_sig_path, args.bsim_template, args.bsim_cat, all_funcs)
+            print(f'Generated BSim sigs for {func_count} functions in {time() - start}')
+            print(f'Sigs are in {bsim_sig_path / sig_name}')
+        else:
+            print('WARN: Skipping BSim. BSim not present')
+
+    # SAST scanning
+    sast_sarifs = []
+    if args.sast:
+        print('Running SAST scanning...')
+        try:
+            check_tools()
+            semgrep_rules = []
+            if args.semgrep_rules:
+                for rule_arg in args.semgrep_rules:
+                    semgrep_rules.extend([r.strip() for r in rule_arg.split(',') if r.strip()])
+            codeql_rules = args.codeql_rules.split(',') if args.codeql_rules else []
+
+            preprocess_c_files(decomp_path)
+
+            sast_path = bin_output_path / 'sast'
+            sarif_path = run_semgrep_scan(decomp_path, semgrep_rules, sast_path / 'semgrep.sarif')
+            sast_sarifs.append(sarif_path)
+
+            codeql_sarif_path = run_codeql_scan(decomp_path, codeql_rules, sast_path / 'codeql.sarif')
+            if codeql_sarif_path:
+                sast_sarifs.append(codeql_sarif_path)
+
+            if sast_sarifs:
+                try:
+                    summary = generate_sast_summary(sast_sarifs, str(decomp_path))
+                    summary_path = sast_path / 'sast_summary.json'
+                    with open(summary_path, 'w') as f:
+                        json.dump(summary, f, indent=2)
+                    print(f'SAST summary written to {summary_path}')
+                    print(f'Total findings: {summary["total_findings"]}, Files scanned: {summary["files_scanned"]}')
+                except Exception as e:
+                    print(f'Warning: Failed to generate SAST summary: {e}')
+
+            print(f'SAST scanning completed for {program.name}')
+
+        except RuntimeError as e:
+            print(f'Error during SAST scanning: {e}')
+
+    return (all_funcs, decompilations, bin_output_path, str(program.compiler), str(program.languageID), callgraphs, sast_sarifs)
+
+
+def _decompile_existing_project(args: Namespace, bin_proj_name: str, project_location: Path,
+                                output_path: Path, symbols_path: Path, gzf_path: Path,
+                                bsim_sig_path_base: Path):
+    """Open an existing Ghidra project, enumerate Program domain files, and decompile each."""
+    from ghidra.base.project import GhidraProject
+    from ghidra.program.flatapi import FlatProgramAPI
+    from ghidra.program.model.listing import Program
+    from ghidra.util.task import ConsoleTaskMonitor
+
+    monitor = ConsoleTaskMonitor()
+
+    try:
+        project = GhidraProject.openProject(project_location, bin_proj_name, True)
+    except Exception as e:
+        msg = str(e)
+        if 'lock' in msg.lower() or 'LockException' in msg:
+            print(f'Cannot open project: it appears to be locked (open in the Ghidra GUI?). '
+                  f'Close it there and retry.\nDetails: {e}')
+        raise
+
+    try:
+        domain_files = []
+
+        def walk(folder):
+            for df in folder.getFiles():
+                try:
+                    if Program.class_.isAssignableFrom(df.getDomainObjectClass()):
+                        domain_files.append(df)
+                except Exception:
+                    pass
+            for sub in folder.getFolders():
+                walk(sub)
+
+        walk(project.getProjectData().getRootFolder())
+
+        if args.program_filters:
+            domain_files = [df for df in domain_files
+                            if any(f in df.getPathname() for f in args.program_filters)]
+
+        if not domain_files:
+            print('No matching Program domain files found in project; exiting.')
+            return
+
+        print(f'Found {len(domain_files)} program(s) in project {bin_proj_name}: '
+              f'{[df.getPathname() for df in domain_files]}')
+
+        for df in domain_files:
+            safe_name = df.getPathname().lstrip('/').replace('/', '_')
+            prog_output = get_bin_output_path(output_path, bin_proj_name) / safe_name
+            prog_decomp = prog_output / 'decomps'
+            prog_bsim = prog_output / 'bsim-xmls'
+            prog_output.mkdir(parents=True, exist_ok=True)
+            prog_decomp.mkdir(exist_ok=True)
+
+            parent_path = df.getParent().getPathname()
+            program = project.openProgram(parent_path, df.getName(), True)
+            try:
+                if args.force_reanalyze:
+                    if not args.skip_symbols:
+                        if args.sym_file_path:
+                            set_pdb(program, args.sym_file_path)
+                        else:
+                            setup_symbol_server(symbols_path)
+                            set_remote_pdbs(program, True)
+                        pdb = get_pdb(program)
+                        if pdb is None:
+                            print(f'Failed to find pdb for {program}')
+                    if args.gdt:
+                        for gdt_path in args.gdt:
+                            print(f'Applying gdt {gdt_path}...')
+                            apply_gdt(program, gdt_path, verbose=args.va)
+                    analyze_program(program, verbose=args.va, force_analysis=args.fa, gzf_path=gzf_path)
+
+                process_program(program, args, prog_output, prog_decomp, prog_bsim,
+                                monitor, args.thread_count)
+
+                if args.gzf:
+                    save_program_as_gzf(program, gzf_path / f'{bin_proj_name}-{safe_name}', project)
+            finally:
+                project.close(program)
+    finally:
+        project.close()
 
 
 def decompile(args: Namespace):
 
     print(f'Starting decompliations: {args}')
 
-    bin_path = Path(args.bin)
-    bin_proj_name = gen_proj_bin_name_from_path(bin_path)
     thread_count = args.thread_count
 
     output_path = Path(args.output_path)
+    output_path.mkdir(exist_ok=True, parents=True)
+
+    if args.existing_project:
+        gpr_path = Path(args.existing_project)
+        if not gpr_path.exists() or not (gpr_path.parent / f'{gpr_path.stem}.rep').is_dir():
+            raise FileNotFoundError(
+                f'Invalid Ghidra project: expected {gpr_path} and sibling {gpr_path.stem}.rep/ to exist')
+        bin_proj_name = gpr_path.stem
+        project_location = gpr_path.parent
+        bin_path = None
+    else:
+        bin_path = Path(args.bin)
+        bin_proj_name = gen_proj_bin_name_from_path(bin_path)
+
     bin_output_path = get_bin_output_path(output_path, bin_proj_name)
     decomp_path = bin_output_path / 'decomps'
-    output_path.mkdir(exist_ok=True, parents=True)
-    bin_output_path.mkdir(exist_ok=True, parents=True)
-    decomp_path.mkdir(exist_ok=True, parents=True)
+    if not args.existing_project:
+        bin_output_path.mkdir(exist_ok=True, parents=True)
+        decomp_path.mkdir(exist_ok=True, parents=True)
 
-    if args.project_path == 'ghidra_projects':
+    if not args.existing_project and args.project_path == 'ghidra_projects':
         project_location = output_path / args.project_path
-    else:
+    elif not args.existing_project:
         project_location = Path(args.project_path)
 
     gzf_path = None
@@ -204,6 +481,11 @@ def decompile(args: Namespace):
     monitor = ConsoleTaskMonitor()
     from ghidra.program.model.listing import Program
 
+    if args.existing_project:
+        _decompile_existing_project(args, bin_proj_name, project_location, output_path,
+                                    symbols_path, gzf_path, bsim_sig_path)
+        return
+
     # Setup and analyze project
     with open_program(bin_path, project_location=project_location, project_name=bin_proj_name, analyze=False) as flat_api:
 
@@ -247,178 +529,6 @@ def decompile(args: Namespace):
 
     # decompile and callgraph all the things
     with open_program(bin_path, project_location=project_location, project_name=bin_proj_name, analyze=False) as flat_api:
-
-        all_funcs = []
-        skip_count = 0
-
         program: "Program" = flat_api.getCurrentProgram()
-
-        for f in program.functionManager.getFunctions(True):
-
-            if args.filters:
-                if any([re.search(fil, f.name, re.IGNORECASE) for fil in args.filters]):
-                    all_funcs.append(f)
-                else:
-                    skip_count += 1
-            else:
-                all_funcs.append(f)
-
-        if skip_count > 0:
-            print(f'Skipped {skip_count} functions that failed to match any of {args.filters}')
-
-        decompilations = []
-        callgraphs = []
-
-        if args.cppexport:
-            print(f"Decompiling {len(all_funcs)} functions using Ghidra's CppExporter")
-            c_file = decomp_path / Path(bin_path.name + '.c')
-            start = time()
-            decompile_to_single_file(c_file, program)
-            print(f'Decompiled {len(all_funcs)} functions for {program.name} in {time() - start}')
-            print(f"Wrote results to {c_file} and {c_file.stem + '.h'}")
-        else:
-            print(f'Decompiling {len(all_funcs)} functions using {thread_count} threads')
-
-            decompilers = setup_decompliers(program, thread_count)
-            completed = 0
-
-            # Decompile all files
-            start = time()
-            with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
-                futures = (executor.submit(decompile_func, func, decompilers, thread_id % thread_count, monitor=monitor)
-                           for thread_id, func in enumerate(all_funcs) if args.skip_cache or not (decomp_path / (get_filename(func) + '.c')).exists())
-
-                for future in concurrent.futures.as_completed(futures):
-                    decompilations.append(future.result())
-                    completed += 1
-                    if (completed % 100) == 0:
-                        print(f'Decompiled {completed} and {int(completed/len(all_funcs)*100)}%')
-
-            print(f'Decompiled {completed} functions for {program.name} in {time() - start}')
-            print(f'{len(all_funcs) - completed} decompilations already existed.')
-
-            # Save all decomps
-            start = time()
-            with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
-                futures = (executor.submit((decomp_path / (name + '.c')).write_text, decomp)
-                           for name, decomp, sig in decompilations)
-
-                for future in concurrent.futures.as_completed(futures):
-                    pass
-
-            print(f'Wrote {completed} decompilations for {program.name} to {decomp_path} in {time() - start}')
-
-            # Generate callgrpahs for functions
-            if args.callgraphs:
-
-                start = time()
-                completed = 0
-                callgraph_path = bin_output_path / 'callgraphs'
-                callgraphs_completed_path = callgraph_path / 'completed_callgraphs.json'
-                if callgraphs_completed_path.exists():
-                    callgraphs_completed = json.loads(callgraphs_completed_path.read_text())
-                else:
-                    callgraphs_completed = []
-
-                callgraph_path.mkdir(exist_ok=True)
-
-                if args.cg_direction == 'both':
-                    directions = ['called', 'calling']
-                else:
-                    directions = [args.cg_direction]
-
-                max_display_depth = None
-                if args.max_display_depth is not None:
-                    max_display_depth = int(args.max_display_depth)
-
-                
-
-                with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
-                    futures = (executor.submit(gen_callgraph, func, max_display_depth, direction, args.max_time_cg_gen, get_filename(func), not args.no_call_refs, args.condense_threshold, args.top_layers, args.bottom_layers, wrap_mermaid=True)
-                               for direction in directions for func in all_funcs if args.skip_cache or get_filename(func) not in callgraphs_completed and re.search(args.callgraph_filter, func.name) is not None)
-
-                    for future in concurrent.futures.as_completed(futures):
-
-                        callgraphs.append(future.result())
-                        name, direction, callgraph, graphs = callgraphs[-1]
-
-                        for ctype, chart in graphs:
-                            if ctype == "mermaid_url":
-                                # Special case: write the URL into its own md file
-                                (callgraph_path / f"{name}.url.{direction}.md").write_text(chart)
-                            else:
-                                # Normal case: write chart content
-                                (callgraph_path / f"{name}.{ctype}.{direction}.md").write_text(chart)
-
-                        callgraphs_completed.append(name)
-
-                        completed += 1
-                        if (completed % 100) == 0:
-                            per_complete = int(completed/len(all_funcs)*100*len(directions))
-                            print(f'\nGenerated callgraph {completed} and {per_complete}%\n')
-
-                callgraphs_completed_path.write_text(json.dumps(callgraphs_completed))
-                print(f'Callgraphed {completed} functions for {program.name} in {time() - start}')
-                print(f'Wrote {completed} callgraphs for {program.name} to {callgraph_path} in {time() - start}')
-                print(f'{len(all_funcs) - completed} callgraphs already existed.')
-
-        # BSim
-        gensig = None
-        manager = None
-        if args.bsim:
-
-            if has_bsim():
-                start = time()
-                print(f'Generating BSim sigs for {len(all_funcs)} functions for {program.name}')
-                sig_name, func_count, cat_count = gen_bsim_sigs_for_program(
-                    program, bsim_sig_path, args.bsim_template, args.bsim_cat, all_funcs)
-                print(f'Generated BSim sigs for {func_count} functions in {time() - start}')
-                print(f'Sigs are in {bsim_sig_path / sig_name}')
-            else:
-                print('WARN: Skipping BSim. BSim not present')
-
-        # SAST scanning
-        sast_sarifs = []
-        if args.sast:
-            print('Running SAST scanning...')
-            try:
-                check_tools()
-                # Parse rules
-                semgrep_rules = []
-                if args.semgrep_rules:
-                    # Handle both multiple --semgrep-rules arguments and comma-separated values
-                    for rule_arg in args.semgrep_rules:
-                        semgrep_rules.extend([r.strip() for r in rule_arg.split(',') if r.strip()])
-                codeql_rules = args.codeql_rules.split(',') if args.codeql_rules else []
-
-                # Preprocess decompiled files for SAST analysis
-                preprocess_c_files(decomp_path)
-                
-                # Run semgrep
-                sast_path = bin_output_path / 'sast'
-                sarif_path = run_semgrep_scan(decomp_path, semgrep_rules, sast_path / 'semgrep.sarif')
-                sast_sarifs.append(sarif_path)
-
-                # Run CodeQL (placeholder)
-                codeql_sarif_path = run_codeql_scan(decomp_path, codeql_rules, sast_path / 'codeql.sarif')
-                if codeql_sarif_path:
-                    sast_sarifs.append(codeql_sarif_path)
-
-                # Generate SAST summary
-                if sast_sarifs:
-                    try:
-                        summary = generate_sast_summary(sast_sarifs, str(decomp_path))
-                        summary_path = sast_path / 'sast_summary.json'
-                        with open(summary_path, 'w') as f:
-                            json.dump(summary, f, indent=2)
-                        print(f'SAST summary written to {summary_path}')
-                        print(f'Total findings: {summary["total_findings"]}, Files scanned: {summary["files_scanned"]}')
-                    except Exception as e:
-                        print(f'Warning: Failed to generate SAST summary: {e}')
-
-                print(f'SAST scanning completed for {program.name}')
-
-            except RuntimeError as e:
-                print(f'Error during SAST scanning: {e}')
-
-        return (all_funcs, decompilations, bin_output_path, str(program.compiler), str(program.languageID), callgraphs, sast_sarifs)
+        return process_program(program, args, bin_output_path, decomp_path, bsim_sig_path,
+                               monitor, thread_count)
